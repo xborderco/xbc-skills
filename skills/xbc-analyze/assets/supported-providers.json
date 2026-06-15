@@ -1,0 +1,42 @@
+{
+  "_meta": {
+    "as_of": "2026-06-15",
+    "source": "docs.xborderco.com — overview/integration-types and other-providers",
+    "note": "Bundled mirror of the published supported-providers reference. Kept in sync with apps/docs-site/src/content/docs/supported-providers.mdx by release discipline (a future version fetches this from the docs site directly). Used by the fit-assessment step; no numbers, no network."
+  },
+  "supported_providers": [
+    {
+      "provider": "Stripe",
+      "status": "supported",
+      "summary": "Stripe is the only payment provider XBorderCo integrates with today. All three Stripe integration types are supported.",
+      "integration_types": [
+        {
+          "type": "Payment Links",
+          "support": "supported",
+          "code_required": "none",
+          "notes": "No-code; the payment page lives on buy.stripe.com. Only available to certain Stripe customers, and there is a first-subscription dashboard caveat."
+        },
+        {
+          "type": "Hosted Checkout",
+          "support": "supported",
+          "code_required": "light",
+          "notes": "Also called Stripe Checkout Sessions. Your backend creates the session and redirects the customer to a Stripe-hosted page."
+        },
+        {
+          "type": "Embedded",
+          "support": "supported",
+          "code_required": "heaviest",
+          "notes": "Stripe Elements inside your own pages. XBorderCo's preferred integration type — it gives the clearest view of the transaction."
+        }
+      ]
+    }
+  ],
+  "roadmap_providers": [
+    {
+      "provider": "Other providers (Adyen, Braintree, PayPal, etc.)",
+      "status": "coming_soon",
+      "notes": "Integrations beyond Stripe are on the roadmap. If you use another provider and want to be in touch about future integrations, contact the XBorderCo team."
+    }
+  ],
+  "fit_guidance": "Map the merchant's setup to a verdict. SUPPORTED if they run Stripe with any of Payment Links / Hosted Checkout / Embedded. ROADMAP if they use a non-Stripe provider (their obligations still hold; XBC support is on the roadmap — point them to a conversation). When you cannot tell the integration type, say so and proceed on 'Stripe, type unconfirmed'."
+}

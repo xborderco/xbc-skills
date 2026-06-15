@@ -4,7 +4,7 @@
     "status": "Documented vendor fees only — community anecdotes excluded from arithmetic. Sources verified 2026-06-12; see notes per provider.",
     "fee_base_note": "Paddle, Lemon Squeezy and Stripe Managed Payments all document that their percentage applies to the tax-inclusive charged total. Charge amounts in this analysis are treated as tax-inclusive totals accordingly."
   },
-  "xbc_assumption": "XBC rate is an ASSUMPTION pending the published pricing plan: 3% with a $0.20 per-transaction minimum (the floor only binds on tickets under ~$6.67), on top of your own Stripe processing fees. One-line update here when pricing is final.",
+  "xbc_assumption": "XBC rate is an ASSUMPTION pending the published pricing plan: 2% with a $0.20 per-transaction minimum (the floor only binds on tickets under ~$10), on top of your own Stripe processing fees — XBC is not a merchant of record, so your existing Stripe fees still apply. One-line update here when pricing is final.",
   "providers": [
     {
       "name": "Raw Stripe (DIY compliance)",
@@ -78,11 +78,11 @@
     {
       "name": "XBC",
       "kind": "xbc",
-      "pct_of_total": 0.03,
+      "pct_of_total": 0.02,
       "fixed_per_tx_usd": 0,
       "min_per_tx_usd": 0.2,
       "notes": [
-        "ASSUMPTION pending published pricing (see xbc_assumption): 3% with $0.20/tx minimum, plus your own Stripe fees (modeled at US pricing when actual fees unavailable; EU/UK accounts have lower domestic pricing — live-mode actual fees are authoritative).",
+        "ASSUMPTION pending published pricing (see xbc_assumption): 2% with $0.20/tx minimum, plus your own Stripe fees (modeled at US pricing when actual fees unavailable; EU/UK accounts have lower domestic pricing — live-mode actual fees are authoritative).",
         "You keep your own Stripe account, customer relationships, payout schedule and exit path — see structure_facts."
       ]
     }
@@ -115,6 +115,13 @@
     "diy_position": [
       "Cheapest on processing fees ONLY — every threshold crossing in the exposure report becomes a registration + periodic filings you own (see ranges in the growth report).",
       "Non-resident registration in many jurisdictions effectively requires hiring a local tax agent or fiscal representative (e.g. South Korea, Japan, Switzerland) — that cost is what the DIY ranges estimate; 'cheapest fees' is not cheapest total."
+    ],
+    "compliance_burden": [
+      "Running tax compliance yourself carries a documented time and money overhead the fee table doesn't show: the World Bank's Paying Taxes data puts the median business at ~268 hours per year on tax compliance (https://subnational.doingbusiness.org/en/data/exploretopics/paying-taxes).",
+      "Vertex estimates indirect-tax (VAT/GST) compliance costs run roughly 1–2% of turnover on top of the tax actually owed, and fall disproportionately on smaller businesses (https://www.vertexinc.com/resources/resource-library/quantifying-vat-compliance-costs)."
+    ],
+    "doing_nothing": [
+      "Not registering is not a zero-cost option. Once you cross a jurisdiction's threshold, uncollected VAT/GST/sales tax accrues as back taxes plus interest and penalties; the amounts are jurisdiction-specific and can exceed the tax originally due. The exposure report shows where you have already crossed."
     ]
   }
 }

@@ -32,6 +32,11 @@ Data quality: {{RESOLVED_PCT}}% of charges resolved to a country
 {{ACTIONABLE_PARAGRAPH — plain-English walk through summary.actionable_unregistered:
 what "registration_likely_required" and "crossed" mean, with each row's note}}
 
+> Leaving a crossed threshold unregistered is not cost-free: the tax you should
+> have collected becomes a liability, and most jurisdictions add interest and
+> penalties on top. This report identifies where you appear to have crossed — what
+> to do about it is a decision for a tax professional.
+
 ## Catalog sanity check
 
 {{CATALOG_PARAGRAPH — from raw/products-prices.json: do tax codes look like

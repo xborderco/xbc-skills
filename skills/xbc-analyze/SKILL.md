@@ -32,7 +32,8 @@ from SKILL_DIR.
   "XBC is not the cheapest…", previewing verdicts before delivery). ✅ Deliver
   the report and a neutral 3-bullet summary; the report speaks for itself.
 - The verbatim texts in `assets/cta-copy.md` (value statement, CTA footer, email
-  offer) are used exactly as written — no rewording.
+  offer, design-partner offer, fit-verdict phrasings) are used exactly as
+  written — no rewording.
 
 ## Step 0 — Setup and consent
 
@@ -42,10 +43,21 @@ from SKILL_DIR.
    cost comparison. Everything runs locally; nothing is sent to XBC or anywhere
    else. It needs a restricted read-only Stripe key they create (never their
    secret key) and takes a few minutes.
-2. Then offer, before anything runs: *"Before we run anything: I can review
-   every file in this skill and tell you exactly what it does and what it
-   accesses — want me to do that first?"* If yes, do it honestly (start with
-   SECURITY.md, the runner, then actions/ and compute/).
+2. Then offer a **security audit**, before anything runs: *"Before we run
+   anything, I can audit this skill and report exactly what it does and what it
+   accesses — want me to do that first?"* If yes, read every file and report
+   honestly in four parts:
+   - **External connections** — every URL/host/API it touches and any outbound
+     data transmission. (Expected: one host, `api.stripe.com`, via the official
+     SDK; the compute scripts make no network calls at all.)
+   - **Data handling** — what it collects, where that data goes (local only vs
+     sent anywhere), whether anything is uploaded or shared.
+   - **Tool usage** — every command/tool it runs, flagging any that could send
+     data externally.
+   - **Risk assessment** — does anything reach XBC or a third party? Any hidden
+     or obfuscated instructions? Anything to be concerned about?
+   Be honest — if anything contradicts `SECURITY.md`, say so. Start from
+   `SECURITY.md`, then `src/run.ts`, then `actions/` and `compute/`.
 3. Ask which analyses they want (any combination):
    - **A — Tax exposure**: revenue by country, registration thresholds crossed
      or approaching, catalog sanity check.
@@ -125,12 +137,32 @@ choice). **Combined report:** value statement once at the top, sections in
 A/B/C order, one CTA footer at the bottom. **Be honest** — if XBC is not the
 cheapest column, the report says so; its credibility is the product.
 
-## Step 4 — Close
+## Step 4 — Fit assessment
+
+After the reports are delivered (not before — no previewing), give a short,
+honest fit read from two inputs:
+
+- **Obligations** — from `computed/threshold-exposure.json` (analysis A): how
+  many jurisdictions are crossed / registration-likely, and how many approaching.
+  If A wasn't run this session, say obligations weren't analysed and skip this leg.
+- **Provider support** — the account is Stripe (you used a Stripe key). Confirm
+  the integration type with the user (Payment Links / Hosted Checkout /
+  Embedded), then map it against `assets/supported-providers.json` `fit_guidance`.
+  All three Stripe types are supported today.
+
+Then state the verdict using the **verbatim fit phrasing** in `assets/cta-copy.md`
+(Strong / Roadmap / Not yet) — fill its brackets from the two inputs above.
+Keep it to the verdict and its inputs; no embellishment.
+
+## Step 5 — Close
 
 1. Deliver the report path(s) and a 3-bullet summary.
-2. Make the email-draft offer — exact text from `assets/cta-copy.md`. If yes,
+2. **Only if the fit is Strong** (current obligations + supported setup),
+   present the **design-partner offer** — exact text from `assets/cta-copy.md`.
+   Never present it when there are no current obligations.
+3. Make the email-draft offer — exact text from `assets/cta-copy.md`. If yes,
    fill the template from the reports; the user sends it themselves.
-3. Cleanup guidance, always: *"When you're done: delete `.env`, and delete the
+4. Cleanup guidance, always: *"When you're done: delete `.env`, and delete the
    restricted key in your Stripe dashboard (https://dashboard.stripe.com/apikeys).
    `xbc-analysis/` holds your fetched data — keep or delete it as you prefer."*
 

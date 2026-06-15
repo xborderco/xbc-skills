@@ -28,6 +28,11 @@ DIY cost if you handle these yourself: {{BASELINE_DIY_RANGES — one-time and an
 why that's stepwise cost (each crossing = a registration + recurring filings),
 vs percentage-fee providers where cost scales linearly with revenue forever}}
 
+> Doing nothing as you grow is not a free option: once a threshold is crossed,
+> uncollected tax accrues as back taxes plus interest and penalties (amounts are
+> jurisdiction-specific). The cost-comparison report carries the cited figures on
+> what self-managed compliance typically costs in time and money.
+
 {{WARNINGS — render every entry of the JSON warnings array verbatim as bold bullets, if present}}
 
 ## Methodology and caveats

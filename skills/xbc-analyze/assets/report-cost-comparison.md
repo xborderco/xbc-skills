@@ -38,9 +38,11 @@ understate the MoR columns, and the report must say so under the table}}
 
 ## What the table can't show
 
-{{STRUCTURE_SECTION — render structure_facts as short subsections:
-MoR trade-offs, Stripe Managed Payments constraints, the XBC position, the DIY
-position. This is the substance; write it plainly, not as a pitch.}}
+{{STRUCTURE_SECTION — render EVERY key in structure_facts as a short subsection,
+humanising the key name: MoR trade-offs, Stripe Managed Payments constraints, the
+XBC position, the DIY position, the compliance burden (cited World Bank / Vertex
+figures), and what doing nothing costs. Each bullet verbatim, including its source
+URL. This is the substance; write it plainly, not as a pitch.}}
 
 {{POLAR_FOOTNOTE — verbatim from cost-model polar_footnote, as a footnote}}
 

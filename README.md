@@ -11,7 +11,7 @@ skills (and go agent-agnostic) without changing how anyone installs it.
 
 | Skill | What it does |
 |-------|--------------|
-| [`xbc-analyze`](skills/xbc-analyze/) | Read-only analysis of a merchant's Stripe account → tax-exposure by country (registration thresholds crossed/approaching), growth simulation, and payment/compliance cost comparison (Paddle, Lemon Squeezy, Stripe Managed Payments, DIY, XBC). Everything runs locally; the merchant keeps the markdown reports. See its [`SKILL.md`](skills/xbc-analyze/SKILL.md) and [`SECURITY.md`](skills/xbc-analyze/SECURITY.md). |
+| [`xbc-analyze`](skills/xbc-analyze/) | Read-only analysis of a merchant's Stripe account → tax-exposure by country (registration thresholds crossed/approaching), growth simulation, and payment/compliance cost comparison (Paddle, Lemon Squeezy, Stripe Managed Payments, DIY, XBC). Closes with a fit assessment and an optional design-partner CTA. Opens with an offered security audit. Everything runs locally; the merchant keeps the markdown reports. See its [`SKILL.md`](skills/xbc-analyze/SKILL.md) and [`SECURITY.md`](skills/xbc-analyze/SECURITY.md). |
 
 ## Install
 

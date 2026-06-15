@@ -22,7 +22,11 @@ every file. Each claim below states how to verify it yourself.
    inside this directory; reports are local markdown. Nothing is uploaded,
    nothing phones home, there is no telemetry of any kind.
 6. **No install-time code execution from us.** This package has no postinstall
-   scripts. Verify: `grep -n "postinstall\|preinstall" package.json`
+   scripts. Verify: `grep -n "postinstall\|preinstall" package.json`. (For full
+   honesty: `npm install` does run the standard native build scripts of the dev
+   tooling — `esbuild` via `tsx`, and the optional macOS-only `fsevents` — pulled
+   from the public npm registry with pinned integrity hashes. These are not XBC
+   code and run before any Stripe key is ever read.)
 7. **When you're done**: delete `.env` and delete the restricted key in your
    Stripe dashboard. Keys cost nothing to create and recreate.
 
