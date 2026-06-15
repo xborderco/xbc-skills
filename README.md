@@ -1,11 +1,11 @@
 # XBC Skills
 
 Internal collection of [agent skills](https://docs.claude.com/en/docs/claude-code/skills) for
-XBorderCo. Private — for XBC team use only, not for distribution.
+XBorderCo, packaged as a **Claude Code plugin marketplace**. Private — for XBC team
+use only, not for distribution.
 
-Right now these target **Claude Code** (each skill is a `SKILL.md`). The repo is
-structured so individual skills can grow agent-agnostic over time without moving
-anything.
+Skills target **Claude Code** today. The repo is structured so it can grow more
+skills (and go agent-agnostic) without changing how anyone installs it.
 
 ## Skills
 
@@ -15,54 +15,78 @@ anything.
 
 ## Install
 
-Clone once, then symlink the skills you want into your Claude skills directory so
-`git pull` keeps them current.
+This repo is a marketplace. Install from inside Claude Code — no clone, no
+symlinks. You need read access to this private repo (you'll be invited) and to be
+authenticated with GitHub the way you normally clone (SSH key in your agent, or
+`gh auth login` / a `GITHUB_TOKEN`).
 
-```bash
-# 1. Clone (uses your own GitHub access — you must be a collaborator)
-gh repo clone shanegrayxbc/xbc-skills
-# or: git clone git@github.com:shanegrayxbc/xbc-skills.git
-cd xbc-skills
-
-# 2. Symlink a skill into your global Claude skills dir
-mkdir -p ~/.claude/skills
-ln -s "$PWD/skills/xbc-analyze" ~/.claude/skills/xbc-analyze
+```text
+/plugin marketplace add shanegrayxbc/xbc-skills
+/plugin install xbc@xbc-skills
 ```
 
-Prefer it scoped to one project instead of globally? Symlink into that repo's
-`.claude/skills/` instead of `~/.claude/skills/`.
-
-Prefer a copy over a symlink (no auto-updates, but self-contained)?
-
-```bash
-cp -R skills/xbc-analyze ~/.claude/skills/xbc-analyze
-```
+That's it — the `xbc` plugin bundles every skill in this repo, so you get
+`xbc-analyze` (and anything added later).
 
 ### Updating
 
-```bash
-git -C path/to/xbc-skills pull   # symlinked skills update automatically
+When new commits land on `main`:
+
+```text
+/plugin update xbc@xbc-skills
 ```
 
-If you copied instead of symlinked, re-copy after pulling.
+Or refresh the catalog first with `/plugin marketplace update`, then update.
+
+### Managing
+
+```text
+/plugin marketplace list          # marketplaces you've added
+/plugin                           # browse / enable / disable installed plugins
+/plugin uninstall xbc@xbc-skills  # remove the plugin
+```
 
 ## Using a skill
 
-In Claude Code, invoke it by name (`/xbc-analyze`) or just describe the task —
-Claude matches it from the skill's description. `xbc-analyze` needs Node.js 18+
-and a **read-only restricted** Stripe key you create; it never touches a secret
-key and nothing leaves your machine. Read the skill's `SKILL.md` first.
+Once installed, Claude discovers each skill from its description — just describe
+the task ("analyse my Stripe account for cross-border tax exposure") and it runs
+the right one. `xbc-analyze` needs **Node.js 18+** and a **read-only restricted**
+Stripe key you create; it never touches a secret key and nothing leaves your
+machine. Read the skill's `SKILL.md` first.
+
+> **Note on `xbc-analyze`'s local files.** It runs real code that writes a
+> `.env` (your Stripe key), installs `node_modules/`, and saves fetched data and
+> reports into `xbc-analysis/` *inside the installed skill directory*. Treat
+> these as ephemeral — the skill tells you to delete `.env` and revoke the key
+> when you're done. A `/plugin update` may reset the skill directory, so copy out
+> any reports you want to keep.
+
+## Repo layout
+
+```text
+xbc-skills/
+├── .claude-plugin/
+│   ├── marketplace.json   # catalog — what /plugin marketplace add reads
+│   └── plugin.json        # the "xbc" plugin manifest; lists which skills ship
+├── skills/
+│   └── xbc-analyze/       # a skill (SKILL.md + its bundled code/assets)
+├── CLAUDE.md
+└── README.md
+```
 
 ## Adding a new skill
 
 1. Create `skills/<your-skill>/` with a `SKILL.md` (name + description frontmatter,
-   then the instructions). Keep heavy detail in bundled files the skill reads on
-   demand — see the [`write-a-skill`](https://github.com/mattpocock/skills) pattern
-   for progressive disclosure.
-2. Anything generated at runtime (data dumps, `.env`, `node_modules/`) must be
-   gitignored inside the skill — see `skills/xbc-analyze/.gitignore` for the model.
-   Never commit secrets or merchant data.
-3. Add a row to the **Skills** table above, commit, and push.
+   then the instructions; push heavy detail into bundled files read on demand).
+2. Add its path to the `skills` array in
+   [`.claude-plugin/plugin.json`](.claude-plugin/plugin.json), e.g.
+   `"./skills/<your-skill>"`.
+3. Bump `version` in `plugin.json` and `marketplace.json` so collaborators'
+   `/plugin update` picks it up.
+4. Anything generated at runtime (data, `.env`, `node_modules/`) must be gitignored
+   inside the skill — see `skills/xbc-analyze/.gitignore` for the model. Never
+   commit secrets or merchant data.
+5. Add a row to the **Skills** table above, commit, and push.
 
 ---
 

@@ -1,0 +1,14 @@
+{
+  "name": "xbc",
+  "version": "0.1.0",
+  "description": "XBorderCo skills bundle for Claude Code.",
+  "author": {
+    "name": "Shane Gray",
+    "email": "shane.joseph.gray@gmail.com"
+  },
+  "homepage": "https://github.com/shanegrayxbc/xbc-skills",
+  "repository": "https://github.com/shanegrayxbc/xbc-skills",
+  "skills": [
+    "./skills/xbc-analyze"
+  ]
+}

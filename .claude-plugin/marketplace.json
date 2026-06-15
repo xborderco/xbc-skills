@@ -1,0 +1,16 @@
+{
+  "name": "xbc-skills",
+  "owner": {
+    "name": "XBorderCo (Shane Gray)",
+    "email": "shane.joseph.gray@gmail.com"
+  },
+  "description": "Internal XBorderCo agent skills for Claude Code.",
+  "plugins": [
+    {
+      "name": "xbc",
+      "source": ".",
+      "version": "0.1.0",
+      "description": "XBorderCo skills bundle. Currently: xbc-analyze — read-only Stripe account analysis (tax exposure by country, growth simulation, provider cost comparison)."
+    }
+  ]
+}
