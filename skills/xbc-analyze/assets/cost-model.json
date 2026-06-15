@@ -4,7 +4,7 @@
     "status": "Documented vendor fees only — community anecdotes excluded from arithmetic. Sources verified 2026-06-12; see notes per provider.",
     "fee_base_note": "Paddle, Lemon Squeezy and Stripe Managed Payments all document that their percentage applies to the tax-inclusive charged total. Charge amounts in this analysis are treated as tax-inclusive totals accordingly."
   },
-  "xbc_assumption": "XBC rate is an ASSUMPTION pending the published pricing plan: 2% with a $0.20 per-transaction minimum (the floor only binds on tickets under ~$10), on top of your own Stripe processing fees — XBC is not a merchant of record, so your existing Stripe fees still apply. One-line update here when pricing is final.",
+  "xbc_assumption": "XBC rate is an ASSUMPTION pending the published pricing plan: 2% of transaction value, percentage-only with NO minimum fee, on top of your own Stripe processing fees — XBC is not a merchant of record, so your existing Stripe fees still apply. One-line update here when pricing is final.",
   "providers": [
     {
       "name": "Raw Stripe (DIY compliance)",
@@ -80,9 +80,8 @@
       "kind": "xbc",
       "pct_of_total": 0.02,
       "fixed_per_tx_usd": 0,
-      "min_per_tx_usd": 0.2,
       "notes": [
-        "ASSUMPTION pending published pricing (see xbc_assumption): 2% with $0.20/tx minimum, plus your own Stripe fees (modeled at US pricing when actual fees unavailable; EU/UK accounts have lower domestic pricing — live-mode actual fees are authoritative).",
+        "ASSUMPTION pending published pricing (see xbc_assumption): 2% of transaction value, percentage-only with no minimum fee, plus your own Stripe fees (modeled at US pricing when actual fees unavailable; EU/UK accounts have lower domestic pricing — live-mode actual fees are authoritative).",
         "You keep your own Stripe account, customer relationships, payout schedule and exit path — see structure_facts."
       ]
     }
