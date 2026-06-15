@@ -1,0 +1,12 @@
+# Defense-in-depth — each skill also carries its own .gitignore.
+# Never commit secrets, dependencies, or runtime/merchant data.
+.env
+.env.*
+!.env.example
+node_modules/
+
+# Skill runtime output (e.g. xbc-analyze fetches into xbc-analysis/)
+skills/*/xbc-analysis/
+
+# OS / editor cruft
+.DS_Store

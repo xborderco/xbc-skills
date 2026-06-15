@@ -1,0 +1,23 @@
+{
+  "name": "xbc-analyze-skill",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Read-only Stripe account analysis: tax exposure, growth simulation, provider cost comparison. See SKILL.md and SECURITY.md.",
+  "scripts": {
+    "action": "tsx src/run.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "dotenv": "^17.2.3",
+    "stripe": "^20.0.0",
+    "tsx": "^4.21.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.17",
+    "typescript": "^5.7.2"
+  }
+}

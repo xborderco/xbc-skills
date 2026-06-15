@@ -1,0 +1,240 @@
+{
+  "_meta": {
+    "as_of": "2026-06",
+    "status": "PROTOTYPE STARTER DATASET — 20 of the eventual 80+ jurisdictions. Figures from official sources as of the as_of date but NOT yet through authoring review (PRD open item #2). Verify before any prospect use.",
+    "scope_note": "Digital-services registration thresholds for non-established (cross-border) sellers. US states: post-Wayfair economic nexus thresholds; digital/SaaS taxability varies by state and is flagged, not modeled."
+  },
+  "jurisdictions": [
+    {
+      "jurisdiction": "European Union (OSS non-Union scheme)",
+      "code": "EU",
+      "level": "country_group",
+      "currency": "EUR",
+      "amount": 0,
+      "lookback": "immediate",
+      "note": "Scheme-aware at compute time: non-EU established merchants get the non-Union OSS scheme (no threshold, liability from first B2C sale); EU-established merchants get Union OSS (EUR 10,000 micro-threshold on cross-border B2C, domestic sales excluded). Domestic VAT obligations are out of scope.",
+      "source_url": "https://vat-one-stop-shop.ec.europa.eu/one-stop-shop_en",
+      "as_of": "2026-06"
+    },
+    {
+      "jurisdiction": "United Kingdom",
+      "code": "GB",
+      "level": "country",
+      "currency": "GBP",
+      "amount": 0,
+      "lookback": "immediate",
+      "note": "Non-established businesses (NETPs) have NO registration threshold — liability from the first taxable UK sale. The GBP 90,000 threshold applies only to UK-established businesses.",
+      "source_url": "https://www.gov.uk/register-for-vat",
+      "as_of": "2026-06"
+    },
+    {
+      "jurisdiction": "Norway (VOEC)",
+      "code": "NO",
+      "level": "country",
+      "currency": "NOK",
+      "amount": 50000,
+      "lookback": "rolling_12m",
+      "source_url": "https://www.skatteetaten.no/en/business-and-organisation/vat-and-duties/vat/foreign/e-commerce-voec/",
+      "as_of": "2026-06"
+    },
+    {
+      "jurisdiction": "Switzerland",
+      "code": "CH",
+      "level": "country",
+      "currency": "CHF",
+      "amount": 100000,
+      "lookback": "calendar_year",
+      "note": "Threshold is GLOBAL turnover, not Swiss turnover — a business with CHF 100k worldwide revenue and any Swiss sales is liable. Modeled here against Swiss revenue only (conservative in the other direction); flagged for human review.",
+      "source_url": "https://www.estv.admin.ch/estv/en/home/value-added-tax/vat-registration.html",
+      "as_of": "2026-06"
+    },
+    {
+      "jurisdiction": "Canada (federal GST/HST, simplified non-resident)",
+      "code": "CA",
+      "level": "country",
+      "currency": "CAD",
+      "amount": 30000,
+      "lookback": "rolling_4q",
+      "note": "Provincial regimes (QC, BC, SK, MB) have separate rules not in this starter dataset.",
+      "source_url": "https://www.canada.ca/en/revenue-agency/services/tax/businesses/topics/gst-hst-businesses/digital-economy-gsthst.html",
+      "as_of": "2026-06"
+    },
+    {
+      "jurisdiction": "Australia",
+      "code": "AU",
+      "level": "country",
+      "currency": "AUD",
+      "amount": 75000,
+      "lookback": "rolling_12m",
+      "source_url": "https://www.ato.gov.au/businesses-and-organisations/international-tax-for-business/gst-on-imported-goods-and-services/gst-on-imported-services-and-digital-products",
+      "as_of": "2026-06"
+    },
+    {
+      "jurisdiction": "New Zealand",
+      "code": "NZ",
+      "level": "country",
+      "currency": "NZD",
+      "amount": 60000,
+      "lookback": "rolling_12m",
+      "source_url": "https://www.ird.govt.nz/gst/gst-for-overseas-businesses",
+      "as_of": "2026-06"
+    },
+    {
+      "jurisdiction": "Japan",
+      "code": "JP",
+      "level": "country",
+      "currency": "JPY",
+      "amount": 10000000,
+      "lookback": "base_period_2y",
+      "note": "Threshold measured against the 'base period' (two fiscal years prior) — approximated as trailing 12 months here; flagged for human review.",
+      "source_url": "https://www.nta.go.jp/english/taxes/consumption_tax/index.htm",
+      "as_of": "2026-06"
+    },
+    {
+      "jurisdiction": "South Korea",
+      "code": "KR",
+      "level": "country",
+      "currency": "KRW",
+      "amount": 0,
+      "lookback": "immediate",
+      "note": "No threshold for foreign suppliers of electronic services — simplified registration from the first B2C sale.",
+      "source_url": "https://www.nts.go.kr/english/main.do",
+      "as_of": "2026-06"
+    },
+    {
+      "jurisdiction": "Singapore (Overseas Vendor Registration)",
+      "code": "SG",
+      "level": "country",
+      "currency": "SGD",
+      "amount": 100000,
+      "lookback": "calendar_year",
+      "note": "Dual test: SGD 100k of B2C supplies to Singapore AND global turnover above SGD 1M. Only the Singapore-revenue leg is modeled here.",
+      "source_url": "https://www.iras.gov.sg/taxes/goods-services-tax-(gst)/gst-and-digital-economy/gst-on-imported-services",
+      "as_of": "2026-06"
+    },
+    {
+      "jurisdiction": "US — California",
+      "code": "US-CA",
+      "level": "us_state",
+      "state": "CA",
+      "currency": "USD",
+      "amount": 500000,
+      "lookback": "calendar_year",
+      "note": "SaaS generally not taxable in CA; electronically delivered software/products vary. Taxability needs human review.",
+      "source_url": "https://www.cdtfa.ca.gov/industry/wayfair.htm",
+      "as_of": "2026-06"
+    },
+    {
+      "jurisdiction": "US — New York",
+      "code": "US-NY",
+      "level": "us_state",
+      "state": "NY",
+      "currency": "USD",
+      "amount": 500000,
+      "tx_threshold": 100,
+      "tx_threshold_logic": "and",
+      "lookback": "rolling_4q",
+      "note": "Both legs must be met in NY (revenue AND 100 transactions). SaaS is generally taxable in NY.",
+      "source_url": "https://www.tax.ny.gov/bus/st/economic_nexus.htm",
+      "as_of": "2026-06"
+    },
+    {
+      "jurisdiction": "US — Texas",
+      "code": "US-TX",
+      "level": "us_state",
+      "state": "TX",
+      "currency": "USD",
+      "amount": 500000,
+      "lookback": "rolling_12m",
+      "note": "SaaS taxable as data processing (80% of charge) in TX.",
+      "source_url": "https://comptroller.texas.gov/taxes/sales/remote-sellers.php",
+      "as_of": "2026-06"
+    },
+    {
+      "jurisdiction": "US — Washington",
+      "code": "US-WA",
+      "level": "us_state",
+      "state": "WA",
+      "currency": "USD",
+      "amount": 100000,
+      "lookback": "calendar_year",
+      "note": "Digital products and SaaS broadly taxable in WA.",
+      "source_url": "https://dor.wa.gov/education/industry-guides/out-state-businesses",
+      "as_of": "2026-06"
+    },
+    {
+      "jurisdiction": "US — Florida",
+      "code": "US-FL",
+      "level": "us_state",
+      "state": "FL",
+      "currency": "USD",
+      "amount": 100000,
+      "lookback": "calendar_year",
+      "note": "Measured on the PREVIOUS calendar year — the default trailing-12m fetch window cannot fully cover it; treat this row as indicative. Electronically delivered software generally not taxable in FL.",
+      "source_url": "https://floridarevenue.com/taxes/taxesfees/Pages/sales_tax.aspx",
+      "as_of": "2026-06"
+    },
+    {
+      "jurisdiction": "US — Illinois",
+      "code": "US-IL",
+      "level": "us_state",
+      "state": "IL",
+      "currency": "USD",
+      "amount": 100000,
+      "tx_threshold": 200,
+      "lookback": "rolling_12m",
+      "note": "Either leg triggers (revenue OR 200 transactions).",
+      "source_url": "https://tax.illinois.gov/research/taxinformation/sales/rota.html",
+      "as_of": "2026-06"
+    },
+    {
+      "jurisdiction": "US — Pennsylvania",
+      "code": "US-PA",
+      "level": "us_state",
+      "state": "PA",
+      "currency": "USD",
+      "amount": 100000,
+      "lookback": "calendar_year",
+      "note": "Digital products and SaaS taxable in PA.",
+      "source_url": "https://www.revenue.pa.gov/TaxTypes/SUT/Pages/default.aspx",
+      "as_of": "2026-06"
+    },
+    {
+      "jurisdiction": "US — Colorado",
+      "code": "US-CO",
+      "level": "us_state",
+      "state": "CO",
+      "currency": "USD",
+      "amount": 100000,
+      "lookback": "calendar_year",
+      "source_url": "https://tax.colorado.gov/out-of-state-businesses",
+      "as_of": "2026-06"
+    },
+    {
+      "jurisdiction": "US — Georgia",
+      "code": "US-GA",
+      "level": "us_state",
+      "state": "GA",
+      "currency": "USD",
+      "amount": 100000,
+      "tx_threshold": 200,
+      "lookback": "calendar_year",
+      "note": "Either leg triggers (revenue OR 200 transactions).",
+      "source_url": "https://dor.georgia.gov/taxes/sales-use-tax",
+      "as_of": "2026-06"
+    },
+    {
+      "jurisdiction": "US — New Jersey",
+      "code": "US-NJ",
+      "level": "us_state",
+      "state": "NJ",
+      "currency": "USD",
+      "amount": 100000,
+      "tx_threshold": 200,
+      "lookback": "calendar_year",
+      "note": "Either leg triggers (revenue OR 200 transactions).",
+      "source_url": "https://www.state.nj.us/treasury/taxation/remotesellers.shtml",
+      "as_of": "2026-06"
+    }
+  ]
+}

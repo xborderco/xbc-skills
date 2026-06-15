@@ -1,0 +1,5 @@
+# The Stripe key lives here and ONLY here — never committed.
+.env
+node_modules/
+# Analysis output (the merchant's data) never leaves their machine.
+xbc-analysis/

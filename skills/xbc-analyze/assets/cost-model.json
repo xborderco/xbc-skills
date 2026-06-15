@@ -1,0 +1,120 @@
+{
+  "_meta": {
+    "as_of": "2026-06-12",
+    "status": "Documented vendor fees only — community anecdotes excluded from arithmetic. Sources verified 2026-06-12; see notes per provider.",
+    "fee_base_note": "Paddle, Lemon Squeezy and Stripe Managed Payments all document that their percentage applies to the tax-inclusive charged total. Charge amounts in this analysis are treated as tax-inclusive totals accordingly."
+  },
+  "xbc_assumption": "XBC rate is an ASSUMPTION pending the published pricing plan: 3% with a $0.20 per-transaction minimum (the floor only binds on tickets under ~$6.67), on top of your own Stripe processing fees. One-line update here when pricing is final.",
+  "providers": [
+    {
+      "name": "Raw Stripe (DIY compliance)",
+      "kind": "raw_stripe",
+      "pct_of_total": 0.029,
+      "fixed_per_tx_usd": 0.3,
+      "intl_surcharge_pct": 0.015,
+      "subscription_surcharge_pct": 0.007,
+      "notes": [
+        "2.9% + 30c US cards, +1.5% international, +0.7% Billing for subscriptions, +0.5% Stripe Tax calculation added when actual fees unavailable (https://stripe.com/pricing). NOTE: modeled rates are US pricing — EU/UK-domiciled accounts have different (typically lower) domestic card pricing; the actual-fees basis (live mode) is authoritative for your account.",
+        "EVERY registration and filing is on you — see the growth report for what that costs as thresholds get crossed."
+      ]
+    },
+    {
+      "name": "Paddle",
+      "kind": "mor",
+      "pct_of_total": 0.05,
+      "fixed_per_tx_usd": 0.5,
+      "notes": [
+        "5% + 50c on the TAX-INCLUSIVE total (https://www.paddle.com/pricing; fee base: https://www.paddle.com/help/manage/reporting/how-are-my-earnings-calculated).",
+        "Not modeled (undocumented): sales-currency to balance-currency FX spread; up-to-1.5% payout FX margin; $15 SWIFT payouts; $15 chargebacks. Community reports put international sellers at 7-8% effective.",
+        "Community-reported effective rate for international sellers: 7-8% — driven by an UNDOCUMENTED sales-to-balance currency FX spread that is NOT modeled even at range-high. Per-incident fees ($15 SWIFT payouts, $15 chargebacks) also excluded."
+      ],
+      "variable_addons": [
+        {
+          "label": "payout currency-conversion margin (Paddle documents 'up to 1.5%')",
+          "pct_of_total": 0.015,
+          "applies": "always"
+        }
+      ]
+    },
+    {
+      "name": "Lemon Squeezy",
+      "kind": "mor",
+      "pct_of_total": 0.05,
+      "fixed_per_tx_usd": 0.5,
+      "intl_surcharge_pct": 0.015,
+      "subscription_surcharge_pct": 0.005,
+      "notes": [
+        "5% + 50c tax-inclusive, +1.5% international, +0.5% subscriptions (https://docs.lemonsqueezy.com/help/getting-started/fees). PayPal +1.5% not modeled (share unknown).",
+        "Not modeled: 1% payout fee to non-US banks; $15 disputes. Stripe-owned; publicly migrating users toward Stripe Managed Payments.",
+        "Per-incident fees excluded: $15 disputes; PayPal payout 3% capped $30."
+      ],
+      "variable_addons": [
+        {
+          "label": "1% payout fee to non-US banks",
+          "pct_of_total": 0.01,
+          "applies": "non_us_home"
+        }
+      ]
+    },
+    {
+      "name": "Stripe Managed Payments",
+      "kind": "mor",
+      "pct_of_total": 0.064,
+      "fixed_per_tx_usd": 0.3,
+      "intl_surcharge_pct": 0.015,
+      "subscription_surcharge_pct": 0.007,
+      "notes": [
+        "3.5% MoR fee on the tax-inclusive total IN ADDITION to standard processing (2.9% + 30c) (https://stripe.com/pricing#managed-payments; https://support.stripe.com/questions/managed-payments-pricing). +0.7% Billing for subscriptions.",
+        "Product constraints: digital products only; Checkout/Payment Links/mobile only — no Elements, no Connect, no third-party tax engines (https://docs.stripe.com/payments/managed-payments)."
+      ],
+      "variable_addons": [
+        {
+          "label": "+1% currency conversion where it applies",
+          "pct_of_total": 0.01,
+          "applies": "always"
+        }
+      ]
+    },
+    {
+      "name": "XBC",
+      "kind": "xbc",
+      "pct_of_total": 0.03,
+      "fixed_per_tx_usd": 0,
+      "min_per_tx_usd": 0.2,
+      "notes": [
+        "ASSUMPTION pending published pricing (see xbc_assumption): 3% with $0.20/tx minimum, plus your own Stripe fees (modeled at US pricing when actual fees unavailable; EU/UK accounts have lower domestic pricing — live-mode actual fees are authoritative).",
+        "You keep your own Stripe account, customer relationships, payout schedule and exit path — see structure_facts."
+      ]
+    }
+  ],
+  "polar_footnote": "Polar.sh (developer-focused MoR on Stripe, $10M Accel seed): tiered 5%+50c free tier down to 3.4%+30c at $400/mo, +1.5% international, $15/dispute (https://polar.sh/docs/merchant-of-record/fees). Included as context, not a modeled column.",
+  "diy_compliance": {
+    "registration_one_time_usd": [
+      400,
+      2500
+    ],
+    "annual_filing_usd": [
+      1000,
+      5000
+    ],
+    "note": "PROTOTYPE sourced ranges per jurisdiction (registration agents/advisors vary widely; PRD open item #3 — needs sourcing review). Ranges, never point estimates."
+  },
+  "structure_facts": {
+    "merchant_of_record_tradeoffs": [
+      "With an MoR, the MoR owns the merchant account and the customer payment relationship; switching later means migrating every saved payment method and active subscription.",
+      "MoR percentage fees are documented to apply to the tax-inclusive total — you pay fees on the tax you collect.",
+      "Payout timing and currency are on the MoR's schedule, not yours."
+    ],
+    "stripe_managed_payments_constraints": [
+      "Digital products only; Checkout/Payment Links/mobile SDK only (no Elements/custom flows); no third-party tax engines; eligibility review required."
+    ],
+    "xbc_position": [
+      "XBC is not an MoR: your Stripe account, your customers, your payouts. XBC handles tax calculation, invoicing, registrations and liability on cross-border sales.",
+      "Leaving XBC does not require migrating your payment stack."
+    ],
+    "diy_position": [
+      "Cheapest on processing fees ONLY — every threshold crossing in the exposure report becomes a registration + periodic filings you own (see ranges in the growth report).",
+      "Non-resident registration in many jurisdictions effectively requires hiring a local tax agent or fiscal representative (e.g. South Korea, Japan, Switzerland) — that cost is what the DIY ranges estimate; 'cheapest fees' is not cheapest total."
+    ]
+  }
+}
