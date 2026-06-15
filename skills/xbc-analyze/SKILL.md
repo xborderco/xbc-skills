@@ -44,6 +44,10 @@ data for every selected analysis is fetched **once** in Step 3; Steps 4 and 6
 only run for the analyses chosen in Step 1. The hard gate never relaxes: never
 render a number a `compute/` script hasn't written to `xbc-analysis/computed/`.
 
+Before writing any report text, read `assets/example-report.md` — the worked
+example that sets the tone, structure, and honest framing (including the neutral
+3-bullet chat summary). Match its voice; never copy its numbers.
+
 ## Step 0 — Security audit (offer first)
 
 Before anything runs, offer a **security audit**: *"Before we run anything, I can
