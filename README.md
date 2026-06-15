@@ -16,17 +16,25 @@ skills (and go agent-agnostic) without changing how anyone installs it.
 ## Install
 
 This repo is a marketplace. Install from inside Claude Code — no clone, no
-symlinks. You need read access to this private repo (you'll be invited) and to be
-authenticated with GitHub the way you normally clone (SSH key in your agent, or
-`gh auth login` / a `GITHUB_TOKEN`).
+symlinks. You need read access to this private repo (you'll be invited as a
+collaborator). **The repo can stay private** — Claude Code clones it with your own
+GitHub credentials.
+
+Use the **SSH URL** (most reliable — works for anyone with an SSH key that has
+repo access):
 
 ```text
-/plugin marketplace add shanegrayxbc/xbc-skills
+/plugin marketplace add git@github.com:shanegrayxbc/xbc-skills.git
 /plugin install xbc@xbc-skills
 ```
 
 That's it — the `xbc` plugin bundles every skill in this repo, so you get
 `xbc-analyze` (and anything added later).
+
+> The shorthand `/plugin marketplace add shanegrayxbc/xbc-skills` also works, but
+> it clones over **HTTPS**, which only succeeds if your git HTTPS auth (e.g.
+> `gh auth login` or a `GITHUB_TOKEN`) is set for a GitHub account that can see
+> this private repo. The SSH URL above sidesteps that, so prefer it.
 
 ### Updating
 
