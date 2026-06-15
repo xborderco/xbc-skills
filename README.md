@@ -1,11 +1,13 @@
 # XBC Skills
 
-Internal collection of [agent skills](https://docs.claude.com/en/docs/claude-code/skills) for
-XBorderCo, packaged as a **Claude Code plugin marketplace**. Private — for XBC team
-use only, not for distribution.
+Internal collection of [agent skills](https://agentskills.io) for XBorderCo.
+**Private — for XBC team and hand-picked prospects only, not for public
+distribution.**
 
-Skills target **Claude Code** today. The repo is structured so it can grow more
-skills (and go agent-agnostic) without changing how anyone installs it.
+Skills follow the open Agent Skills standard and install into any compatible
+agent (Claude Code, Cursor, Codex, OpenCode, Cline, …) via the
+[`skills` CLI](https://github.com/vercel-labs/skills) — `npx skills add`. There
+is no Claude-specific plugin packaging; the same folder works everywhere.
 
 ## Skills
 
@@ -15,87 +17,93 @@ skills (and go agent-agnostic) without changing how anyone installs it.
 
 ## Install
 
-This repo is a marketplace. Install from inside Claude Code — no clone, no
-symlinks. You need read access to this private repo (you'll be invited as a
-collaborator). **The repo can stay private** — Claude Code clones it with your own
-GitHub credentials.
+The repo is **private** — you'll be invited as a GitHub collaborator. The CLI
+clones it with **your own git credentials**, so install whichever way your git
+auth is already set up — both work:
 
-Use the **SSH URL** (most reliable — works for anyone with an SSH key that has
-repo access):
+```bash
+# HTTPS — needs gh auth / a GITHUB_TOKEN / an HTTPS credential helper
+npx skills add shanegrayxbc/xbc-skills
 
-```text
-/plugin marketplace add git@github.com:shanegrayxbc/xbc-skills.git
-/plugin install xbc@xbc-skills
+# SSH — needs an SSH key with access to the repo (check with: ssh-add -l)
+npx skills add git@github.com:shanegrayxbc/xbc-skills.git
 ```
 
-That's it — the `xbc` plugin bundles every skill in this repo, so you get
-`xbc-analyze` (and anything added later).
+The CLI auto-detects which agents you have installed and adds the skill to each
+one (`.claude/skills/` for Claude Code, `.agents/skills/` for Cursor/Codex/etc.).
+Useful flags:
 
-> The shorthand `/plugin marketplace add shanegrayxbc/xbc-skills` also works, but
-> it clones over **HTTPS**, which only succeeds if your git HTTPS auth (e.g.
-> `gh auth login` or a `GITHUB_TOKEN`) is set for a GitHub account that can see
-> this private repo. The SSH URL above sidesteps that, so prefer it.
+- `-g, --global` — install for all your projects (`~/.claude/skills/`, etc.)
+  instead of just the current one.
+- `--skill xbc-analyze` — install one named skill rather than everything in the
+  repo.
+- `--copy` — copy the files instead of the default **symlink** (the CLI symlinks
+  back to a single local clone so updates are one source of truth; you never wire
+  up symlinks by hand).
 
 ### Updating
 
-When new commits land on `main`:
-
-```text
-/plugin update xbc@xbc-skills
+```bash
+npx skills add shanegrayxbc/xbc-skills    # re-run to pull the latest main
 ```
 
-Or refresh the catalog first with `/plugin marketplace update`, then update.
+> **Why re-add instead of `npx skills update`?** For *private* repos the CLI
+> can't compute a folder hash, so `npx skills update` / `npx skills check`
+> report "skipped (reinstall needed)" and don't actually pull
+> ([vercel-labs/skills#162](https://github.com/vercel-labs/skills/issues/162)).
+> Re-running `npx skills add` is the reliable refresh until that's fixed. Once
+> the repo is public, `npx skills update` works normally.
 
 ### Managing
 
-```text
-/plugin marketplace list          # marketplaces you've added
-/plugin                           # browse / enable / disable installed plugins
-/plugin uninstall xbc@xbc-skills  # remove the plugin
+```bash
+npx skills list              # what's installed
+npx skills remove xbc-analyze
 ```
 
 ## Using a skill
 
-Once installed, Claude discovers each skill from its description — just describe
-the task ("analyse my Stripe account for cross-border tax exposure") and it runs
-the right one. `xbc-analyze` needs **Node.js 18+** and a **read-only restricted**
-Stripe key you create; it never touches a secret key and nothing leaves your
-machine. Read the skill's `SKILL.md` first.
+Once installed, your agent discovers each skill from its description — just
+describe the task ("analyse my Stripe account for cross-border tax exposure")
+and it runs the right one. `xbc-analyze` needs **Node.js 18+** and a
+**read-only restricted** Stripe key you create; it never touches a secret key
+and nothing leaves your machine. Read the skill's `SKILL.md` first.
 
 > **Note on `xbc-analyze`'s local files.** It runs real code that writes a
 > `.env` (your Stripe key), installs `node_modules/`, and saves fetched data and
 > reports into `xbc-analysis/` *inside the installed skill directory*. Treat
 > these as ephemeral — the skill tells you to delete `.env` and revoke the key
-> when you're done. A `/plugin update` may reset the skill directory, so copy out
-> any reports you want to keep.
+> when you're done. Re-running `npx skills add` to update may reset the skill
+> directory, so copy out any reports you want to keep.
 
 ## Repo layout
 
 ```text
 xbc-skills/
-├── .claude-plugin/
-│   ├── marketplace.json   # catalog — what /plugin marketplace add reads
-│   └── plugin.json        # the "xbc" plugin manifest; lists which skills ship
 ├── skills/
 │   └── xbc-analyze/       # a skill (SKILL.md + its bundled code/assets)
 ├── CLAUDE.md
 └── README.md
 ```
 
+Every folder under `skills/` with a `SKILL.md` is auto-discovered by
+`npx skills add` — there is no manifest to register skills in.
+
 ## Adding a new skill
 
-1. Create `skills/<your-skill>/` with a `SKILL.md` (name + description frontmatter,
-   then the instructions; push heavy detail into bundled files read on demand).
-2. Add its path to the `skills` array in
-   [`.claude-plugin/plugin.json`](.claude-plugin/plugin.json), e.g.
-   `"./skills/<your-skill>"`.
-3. Bump `version` in `plugin.json` and `marketplace.json` so collaborators'
-   `/plugin update` picks it up.
-4. Anything generated at runtime (data, `.env`, `node_modules/`) must be gitignored
+1. Create `skills/<your-skill>/SKILL.md`. The frontmatter `name` **must match the
+   folder name** (lowercase, hyphens), with a `description`; then the
+   instructions — push heavy detail into bundled files read on demand
+   (progressive disclosure).
+2. Anything generated at runtime (data, `.env`, `node_modules/`) must be gitignored
    inside the skill — see `skills/xbc-analyze/.gitignore` for the model. Never
-   commit secrets or merchant data.
-5. Add a row to the **Skills** table above, commit, and push.
+   commit secrets or merchant data. If the skill ships runnable code, pin
+   dependencies (commit the lockfile) for a reproducible install.
+3. Add a row to the **Skills** table above, commit, and push. Collaborators pick
+   it up by re-running `npx skills add`.
 
 ---
 
 © XBorderCo — internal. Do not redistribute.
+</content>
+</invoke>
