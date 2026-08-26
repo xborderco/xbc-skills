@@ -1,0 +1,176 @@
+{
+  "_comment": "Hand-authored corrections applied AFTER generation by tools/refresh-thresholds.ts. 'patch' merges into a generated row by code; 'add' appends rows Stripe has no concept of; 'drop' removes generated rows. Patching clears needs_review unless the patch sets one, so every entry here is a recorded human decision.",
+  "as_of": "2026-08",
+  "patch": {
+    "US-CA": {
+      "note": "SaaS generally not taxable in CA; electronically delivered software/products vary. Taxability needs human review.",
+      "needs_review": false
+    },
+    "US-TX": {
+      "note": "SaaS taxable as data processing (80% of charge) in TX.",
+      "needs_review": false
+    },
+    "US-WA": {
+      "note": "Digital products and SaaS broadly taxable in WA.",
+      "needs_review": false
+    },
+    "US-FL": {
+      "note": "Measured on the PREVIOUS calendar year — the default trailing-12m fetch window cannot fully cover it; treat this row as indicative. Electronically delivered software generally not taxable in FL.",
+      "needs_review": false
+    },
+    "US-IL": {
+      "note": "Either leg triggers (revenue OR 200 transactions).",
+      "needs_review": false
+    },
+    "US-CO": {
+      "note": "SaaS is NOT taxable at the Colorado state level. Colorado's ~70 home-rule cities (Denver, Boulder and others) administer their own sales tax and several DO tax SaaS — those local registrations are a separate obligation and are not modeled here.",
+      "needs_review": false
+    },
+    "US-GA": {
+      "note": "Either leg triggers (revenue OR 200 transactions). SaaS and electronically delivered software are generally NOT taxable in GA; taxability needs human review.",
+      "needs_review": false
+    },
+    "US-NJ": {
+      "note": "Either leg triggers (revenue OR 200 transactions). NJ taxes prewritten software delivered electronically, but exempts SaaS used exclusively for business purposes — taxability needs human review.",
+      "needs_review": false
+    },
+    "JP": {
+      "note": "Threshold measured against the 'base period' (two fiscal years prior) — approximated as trailing 12 months here; flagged for human review.",
+      "needs_review": false
+    },
+    "SG": {
+      "amount": 100000,
+      "currency": "SGD",
+      "lookback": "calendar_year",
+      "needs_review": false,
+      "note": "Dual test: SGD 100,000 of B2C supplies into Singapore AND global turnover above SGD 1,000,000. Stripe's published figure leads with the global leg; the Singapore leg is the one scored here, because the global leg cannot be measured from Stripe charges alone."
+    },
+    "GB": {
+      "note": "Non-established businesses (NETPs) have NO registration threshold — liability from the first taxable UK sale. The GBP 90,000 threshold applies only to UK-established businesses.",
+      "needs_review": false
+    },
+    "US-NY": {
+      "lookback": "ny_sales_tax_4q",
+      "tx_threshold": 100,
+      "tx_threshold_exclusive": true,
+      "tx_threshold_logic": "and",
+      "amount_exclusive": true,
+      "note": "Both legs must be met in NY: revenue OVER USD 500,000 AND MORE THAN 100 sales — so 100 sales exactly does not trigger. Measured over the four IMMEDIATELY PRECEDING New York sales tax quarters (Dec-Feb, Mar-May, Jun-Aug, Sep-Nov), which are not calendar quarters and exclude the current, incomplete quarter. SaaS is generally taxable in NY.",
+      "needs_review": false
+    },
+    "US-PA": {
+      "lookback": "rolling_12m",
+      "note": "Measured over the PREVIOUS 12-MONTH PERIOD (Sales Tax Bulletin 2019-01), not a calendar year. Digital products and SaaS taxable in PA.",
+      "needs_review": false
+    },
+    "CH": {
+      "note": "Stripe publishes CHF 100,000 per rolling 12 months. The statutory test is GLOBAL turnover, not Swiss turnover — a business with CHF 100k worldwide revenue and any Swiss sales is liable. Modelled here against Swiss revenue only, which is conservative in the other direction.",
+      "needs_review": false
+    },
+    "ZA": {
+      "needs_review": true,
+      "review_reasons": [
+        "Stripe prints '2,00,000 ZAR' — Indian lakh digit grouping on a rand figure, so the value is not trustworthy as written.",
+        "SARS' published threshold for foreign electronic services suppliers is understood to be ZAR 1,000,000. Confirm against the tax authority before shipping this row."
+      ]
+    },
+    "TR": {
+      "needs_review": true,
+      "review_reasons": [
+        "Stripe states 'past or next 12 months'. The forward-looking leg cannot be modelled from historical charges — this row tests the backward leg only and will under-report."
+      ]
+    },
+    "US-DE": {
+      "no_tax": true,
+      "note": "Delaware levies no state sales tax. No registration obligation arises from sales volume.",
+      "needs_review": false
+    },
+    "US-MT": {
+      "no_tax": true,
+      "note": "Montana levies no state sales tax. No registration obligation arises from sales volume.",
+      "needs_review": false
+    },
+    "US-NH": {
+      "no_tax": true,
+      "note": "New Hampshire levies no state sales tax. No registration obligation arises from sales volume.",
+      "needs_review": false
+    },
+    "US-OR": {
+      "no_tax": true,
+      "note": "Oregon levies no state sales tax. No registration obligation arises from sales volume.",
+      "needs_review": false
+    },
+    "HK": {
+      "no_tax": true,
+      "note": "Hong Kong levies no VAT, GST or sales tax. No registration obligation arises from sales volume.",
+      "needs_review": false
+    },
+    "AU": {
+      "needs_review": false,
+      "note": "AUD 75,000 in the previous or current year. Stripe also notes an AUD 150,000 variant for non-profit organisations, which is not modelled — a non-profit merchant will be over-flagged."
+    },
+    "US-AK": {
+      "needs_review": false,
+      "note": "Alaska has no statewide sales tax; the 100,000 USD figure is the ARSSTC statewide standard adopted by local jurisdictions, which may vary it. Treat this row as indicative of local, not state, obligations."
+    },
+    "LK": {
+      "needs_review": false,
+      "note": "Stripe writes the currency as 'RS'; read as LKR."
+    }
+  },
+  "drop": [
+    "AT",
+    "BE",
+    "BG",
+    "HR",
+    "CY",
+    "CZ",
+    "DK",
+    "EE",
+    "FI",
+    "FR",
+    "DE",
+    "GR",
+    "HU",
+    "IE",
+    "IT",
+    "LV",
+    "LT",
+    "LU",
+    "MT",
+    "NL",
+    "PL",
+    "PT",
+    "RO",
+    "SK",
+    "SI",
+    "ES",
+    "SE"
+  ],
+  "add": [
+    {
+      "jurisdiction": "European Union (OSS non-Union scheme)",
+      "code": "EU",
+      "level": "country_group",
+      "currency": "EUR",
+      "amount": 0,
+      "lookback": "immediate",
+      "note": "Scheme-aware at compute time: non-EU established merchants get the non-Union OSS scheme (no threshold, liability from first B2C sale); EU-established merchants get Union OSS (EUR 10,000 micro-threshold on cross-border B2C, domestic sales excluded). Domestic VAT obligations are out of scope.",
+      "source_url": "https://vat-one-stop-shop.ec.europa.eu/one-stop-shop_en",
+      "as_of": "2026-08",
+      "stripe_doc_url": "https://docs.stripe.com/tax/supported-countries/european-union/collect-tax"
+    },
+    {
+      "jurisdiction": "Canada (federal GST/HST, simplified non-resident)",
+      "code": "CA",
+      "level": "country",
+      "currency": "CAD",
+      "amount": 30000,
+      "lookback": "rolling_4q",
+      "note": "Provincial regimes (QC, BC, SK, MB) have separate rules not in this starter dataset.",
+      "source_url": "https://www.canada.ca/en/revenue-agency/services/tax/businesses/topics/gst-hst-businesses/digital-economy-gsthst.html",
+      "as_of": "2026-08",
+      "stripe_doc_url": "https://docs.stripe.com/tax/supported-countries/canada"
+    }
+  ]
+}

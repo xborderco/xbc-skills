@@ -8,6 +8,6 @@
     "noEmit": true,
     "types": ["node"]
   },
-  "include": ["src/**/*", "actions/**/*", "compute/**/*"],
+  "include": ["src/**/*", "actions/**/*", "compute/**/*", "tools/**/*"],
   "exclude": ["node_modules"]
 }

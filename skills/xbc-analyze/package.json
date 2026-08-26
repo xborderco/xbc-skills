@@ -3,10 +3,11 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Read-only Stripe account analysis: tax exposure, growth simulation, provider cost comparison. See SKILL.md and SECURITY.md.",
+  "description": "Read-only Stripe account analysis: revenue by country, registration thresholds, invoicing and business customers, integration fit. See SKILL.md and SECURITY.md.",
   "scripts": {
     "action": "tsx src/run.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "refresh-thresholds": "tsx tools/refresh-thresholds.ts"
   },
   "engines": {
     "node": ">=18"
