@@ -1,8 +1,7 @@
 # XBC Skills
 
-Internal collection of [agent skills](https://agentskills.io) for XBorderCo.
-**Private — for XBC team and hand-picked prospects only, not for public
-distribution.**
+Public collection of [agent skills](https://agentskills.io) published by
+XBorderCo. Free to install and use; see [LICENSE](LICENSE).
 
 Skills follow the open Agent Skills standard and install into any compatible
 agent (Claude Code, Cursor, Codex, OpenCode, Cline, …) via the
@@ -17,17 +16,11 @@ is no Claude-specific plugin packaging; the same folder works everywhere.
 
 ## Install
 
-The repo is **private** — you'll be invited as a GitHub collaborator. The CLI
-clones it with **your own git credentials**, so install whichever way your git
-auth is already set up — both work:
-
 ```bash
-# HTTPS — needs gh auth / a GITHUB_TOKEN / an HTTPS credential helper
-npx skills add shanegrayxbc/xbc-skills
-
-# SSH — needs an SSH key with access to the repo (check with: ssh-add -l)
-npx skills add git@github.com:shanegrayxbc/xbc-skills.git
+npx skills add xborderco/xbc-skills
 ```
+
+No account, token, or SSH key needed — the repo is public.
 
 The CLI auto-detects which agents you have installed and adds the skill to each
 one (`.claude/skills/` for Claude Code, `.agents/skills/` for Cursor/Codex/etc.).
@@ -44,15 +37,9 @@ Useful flags:
 ### Updating
 
 ```bash
-npx skills add shanegrayxbc/xbc-skills    # re-run to pull the latest main
+npx skills check     # what's out of date
+npx skills update    # pull the latest main
 ```
-
-> **Why re-add instead of `npx skills update`?** For *private* repos the CLI
-> can't compute a folder hash, so `npx skills update` / `npx skills check`
-> report "skipped (reinstall needed)" and don't actually pull
-> ([vercel-labs/skills#162](https://github.com/vercel-labs/skills/issues/162)).
-> Re-running `npx skills add` is the reliable refresh until that's fixed. Once
-> the repo is public, `npx skills update` works normally.
 
 ### Managing
 

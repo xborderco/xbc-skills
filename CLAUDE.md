@@ -4,7 +4,7 @@ Guidance for Claude Code when working in this repo.
 
 ## What this is
 
-A private collection of agent skills for XBorderCo, following the open
+A public collection of agent skills published by XBorderCo, following the open
 [Agent Skills standard](https://agentskills.io) and installed with the
 [`skills` CLI](https://github.com/vercel-labs/skills) (`npx skills add`). Each
 skill is a self-contained directory under `skills/<name>/` with a `SKILL.md`
@@ -33,5 +33,4 @@ others.
 2. Update the **Skills** table in `README.md`.
 3. If the skill ships runnable code, pin dependencies (commit the lockfile) so a
    collaborator gets a reproducible install.
-4. Collaborators pick up new/changed skills by re-running `npx skills add`
-   (`npx skills update` is unreliable on private repos — see README).
+4. Users pick up new/changed skills with `npx skills update`.
