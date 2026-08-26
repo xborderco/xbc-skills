@@ -1,0 +1,137 @@
+{
+  "_meta": {
+    "as_of": "2026-08-26",
+    "status": "Derived from xbc-docs and the engine source, not from marketing copy. Two items need an owner's sign-off before this is quoted to a prospect — see needs_signoff below.",
+    "sources": [
+      "xbc-docs 07-merchant-integration-guide.md §7.2 (installation), §7.4 (integration patterns), §7.5 (configuration summary and Not Supported)",
+      "xbc-docs 21-subscriptions.md (first cycle vs renewals) — dated June 2026, SUPERSEDES §7.4 where the two disagree",
+      "mvp/server/src/features/stripe/stripe.invoice-created.ts and stripe.checkout-session-completed.ts (what the engine actually does)"
+    ],
+    "note": "XBorderCo product facts live here rather than in the report template, so they are auditable and updatable without editing any instruction text — the same discipline as thresholds.json and supported-providers.json.",
+    "needs_signoff": [
+      "The liability wording in 'what_the_merchant_never_does'. xbc-docs deemed-supplier-vs-transaction-control-2026-06-03.md records deemed-supplier status as a defensible position for EU/UK/AU/NO with contractual and evidential work outstanding, and the US treated as an open question. State it as XBorderCo's model, not as settled law, until an owner confirms otherwise.",
+      "The effort estimates. These are XBorderCo estimates, not measurements from real onboardings, and are labelled as such wherever they render."
+    ],
+    "corrections": [
+      "2026-08-26, Shane Gray: there is no integration or developer involvement in onboarding a merchant, beyond testing transactions. The install step \"Apply the configuration properties for your integration pattern\" (merchant's developer, hours per checkout surface) was removed. configuration_patterns is retained because it still records what each pattern requires and which setups cannot be processed, but it is no longer presented as merchant work."
+    ]
+  },
+
+  "install": [
+    {
+      "step": "Install the XBorderCo app",
+      "who": "merchant",
+      "detail": "From the Stripe App Marketplace, or a direct install link provided by XBorderCo.",
+      "effort": "minutes"
+    },
+    {
+      "step": "Grant permissions",
+      "who": "merchant",
+      "detail": "Stripe shows an OAuth consent screen. XBorderCo requests read access to customer and subscription data, the ability to create and modify invoices and add invoice line items, and access to webhook events.",
+      "effort": "minutes"
+    },
+    {
+      "step": "Complete onboarding",
+      "who": "merchant",
+      "detail": "Review the configuration changes for your integration type, agree terms, provide business details and tax settings. XBorderCo's webhook goes live at the end of onboarding — the merchant wires up nothing.",
+      "effort": "under an hour"
+    },
+    {
+      "step": "Test transactions per country",
+      "who": "both",
+      "detail": "Sandbox testing is available on the dev and demo environments.",
+      "effort": "1-2 days"
+    }
+  ],
+
+  "what_the_merchant_never_does": {
+    "registrations": "The merchant does not register in the countries they sell into. XBorderCo holds the registrations, files and remits.",
+    "liability": "On sales where XBorderCo acts as the deemed supplier, XBorderCo is the party liable for the tax. The merchant remains the supplier of their own product to their own customer, keeps their Stripe account, their customers and their payouts.",
+    "webhooks": "The merchant subscribes to nothing. XBorderCo's webhook is activated at the end of onboarding.",
+    "integration_work": "The merchant's developers do no integration work. XBorderCo applies the configuration for the merchant's integration pattern during onboarding. The merchant tests transactions.",
+    "renewals": "Existing subscription renewals require no changes — they create draft invoices that XBorderCo amends automatically."
+  },
+
+  "configuration_patterns": [
+    {
+      "pattern": "Stripe Checkout, mode: subscription (including Payment Links)",
+      "add": ["billing_address_collection: \"auto\""],
+      "first_cycle": "Stripe creates and pays the first invoice atomically, and it cannot be amended afterwards. XBorderCo leaves it alone and points the customer at XBorderCo's own tax invoice through the invoice footer, set on the customer record before the first invoice exists. On a frictionless wallet (Apple Pay, Amazon Pay) the sequence can complete before the per-customer footer is in place, in which case the first invoice carries the account-level default footer instead.",
+      "renewals": "Amended automatically — no configuration.",
+      "supersedes": "§7.4 tells merchants to add subscription_data.billing_cycle_anchor and proration_behavior to delay the first invoice. 21-subscriptions.md (June 2026) records that approach as not how this works; do not quote the §7.4 version for Checkout or Payment Links."
+    },
+    {
+      "pattern": "Stripe Checkout, mode: payment",
+      "add": [
+        "billing_address_collection: \"auto\"",
+        "customer_creation: \"always\"",
+        "payment_intent_data.setup_future_usage: \"off_session\""
+      ],
+      "do_not": "Do NOT enable invoice_creation.enabled — Stripe finalises the invoice before XBorderCo can amend it.",
+      "first_cycle": "XBorderCo creates the invoice after checkout completes."
+    },
+    {
+      "pattern": "Invoice API (direct invoices.create)",
+      "add": ["auto_advance: false", "customer address.country"],
+      "first_cycle": "The draft is held for XBorderCo to amend, then finalised so payment collects as normal.",
+      "risk": "Omitting auto_advance: false lets the invoice finalise before XBorderCo can process it."
+    },
+    {
+      "pattern": "Subscription API (direct subscriptions.create)",
+      "add": [
+        "billing_cycle_anchor set to a future timestamp",
+        "proration_behavior: \"none\"",
+        "default_payment_method attached",
+        "customer address.country"
+      ],
+      "first_cycle": "The delay lets Stripe create the first invoice as a draft, which XBorderCo then amends."
+    },
+    {
+      "pattern": "Embedded (Stripe Elements)",
+      "add": [],
+      "first_cycle": "UNDOCUMENTED — xbc-docs does not give Elements its own configuration guidance. Confirm with XBorderCo rather than assuming it matches Hosted Checkout."
+    }
+  ],
+
+  "engine_flow": "XBorderCo listens for invoice.created. Checkout-originated invoices are handled inline by the checkout path; API and renewal invoices are paused as drafts. Before it acts on any invoice it runs a set of gates: whether the invoice was already processed, whether the merchant and the customer's country are eligible and whether liability sits with XBorderCo, whether every product on the invoice classifies to a supported tax code, and whether a customer tax ID is awaiting verification (in which case the invoice is held rather than processed). Jurisdiction is decided from an evidence hierarchy rather than a single address lookup — the billing address, the payment-instrument country, Stripe's own location signals, and any customer tax ID, with a validated VAT number driving reverse-charge treatment. It then calculates and applies the tax, writes its own sequential tax invoice, and finalises so payment collects as normal. Anything out of scope is restored untouched.",
+
+  "not_supported": [
+    "PaymentIntents used directly — no invoice is created, so XBorderCo never sees the transaction.",
+    "The legacy Charges API — same reason.",
+    "Stripe Checkout in mode: payment with invoice_creation.enabled — Stripe finalises the invoice before XBorderCo can amend it."
+  ],
+
+  "stripe_tax_comparison": {
+    "note": "Factual, and answerable entirely from Stripe's own documentation. Render it as-is; do not add a recommendation.",
+    "stripe_tax_does": [
+      "Calculates the tax due at checkout.",
+      "Monitors your revenue against registration thresholds and tells you where you have crossed one."
+    ],
+    "stripe_tax_does_not": [
+      "Register you in any jurisdiction.",
+      "File returns or remit the money.",
+      "Take on the liability — you remain the party liable for the tax, and you appear on the invoice as that party."
+    ],
+    "xbc_does": [
+      "Registers, files and remits in the jurisdictions it covers.",
+      "Is named as the party liable for the tax on sales where it is the deemed supplier."
+    ],
+    "not_mutually_exclusive": true,
+    "source": "https://docs.stripe.com/tax"
+  },
+
+  "sources_for_report": [
+    {
+      "label": "Stripe Tax — supported countries and the registration threshold for each",
+      "url": "https://docs.stripe.com/tax/supported-countries"
+    },
+    {
+      "label": "Stripe Tax — threshold monitoring, including the measurement window used per jurisdiction",
+      "url": "https://docs.stripe.com/tax/monitoring"
+    },
+    {
+      "label": "Stripe Apps, Checkout and Billing documentation",
+      "url": "https://docs.stripe.com"
+    }
+  ]
+}

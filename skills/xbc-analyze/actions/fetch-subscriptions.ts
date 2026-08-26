@@ -1,7 +1,9 @@
 import type Stripe from "stripe";
 import { writeRaw } from "./_params";
 
-// Store the subscription mix (recurring revenue share feeds the cost model).
+// Store the subscription mix. Quantity and interval_count are kept because the
+// recurring-revenue figure needs them: a price of 100 at interval_count 3 is not
+// the same monthly amount as a price of 100 at interval_count 1.
 // npx tsx src/run.ts actions/fetch-subscriptions.ts
 export default async function fetchSubscriptions(stripe: Stripe) {
   const subscriptions = [];
@@ -19,6 +21,8 @@ export default async function fetchSubscriptions(stripe: Stripe) {
         unit_amount: it.price.unit_amount,
         currency: it.price.currency?.toUpperCase() ?? null,
         interval: it.price.recurring?.interval ?? null,
+        interval_count: it.price.recurring?.interval_count ?? null,
+        quantity: it.quantity ?? null,
       })),
     });
   }

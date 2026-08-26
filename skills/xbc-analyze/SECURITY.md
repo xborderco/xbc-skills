@@ -18,16 +18,26 @@ every file. Each claim below states how to verify it yourself.
    gitignored. Verify: read `src/run.ts` (~100 lines); `grep -rn "STRIPE_API_KEY" .`
 4. **Secret keys are refused.** The runner exits if the key doesn't start with
    `rk_` — it will not run with your `sk_` secret key at all.
-5. **Your data stays local.** Fetched data goes to `xbc-analysis/` (gitignored)
+5. **The CSV path touches no network at all.** If you import a Stripe Dashboard
+   export instead of connecting a key (`src/import-csv.ts`), nothing in this
+   skill opens a connection: the importer reads your file, writes JSON into
+   `xbc-analysis/raw/`, and exits. It never loads the Stripe SDK. Verify: read
+   `src/import-csv.ts` (~250 lines) — its only imports are `node:fs`,
+   `node:path` and `node:url`.
+6. **Your data stays local.** Fetched data goes to `xbc-analysis/` (gitignored)
    inside this directory; reports are local markdown. Nothing is uploaded,
-   nothing phones home, there is no telemetry of any kind.
-6. **No install-time code execution from us.** This package has no postinstall
+   nothing phones home, there is no telemetry of any kind. This includes the
+   question list: if the skill can't answer something and records it in
+   `xbc-analysis/questions.md`, that file stays on your machine. The skill can
+   DRAFT an email to XBorderCo containing those questions, but you send it — it
+   has no ability to send mail itself. Verify: `grep -rn "smtp\|sendmail\|mailto\|nodemailer" .`
+7. **No install-time code execution from us.** This package has no postinstall
    scripts. Verify: `grep -n "postinstall\|preinstall" package.json`. (For full
    honesty: `npm install` does run the standard native build scripts of the dev
    tooling — `esbuild` via `tsx`, and the optional macOS-only `fsevents` — pulled
    from the public npm registry with pinned integrity hashes. These are not XBC
    code and run before any Stripe key is ever read.)
-7. **When you're done**: delete `.env` and delete the restricted key in your
+8. **When you're done**: delete `.env` and delete the restricted key in your
    Stripe dashboard. Keys cost nothing to create and recreate.
 
 Found something that contradicts any of this? Please tell us — that's a bug of

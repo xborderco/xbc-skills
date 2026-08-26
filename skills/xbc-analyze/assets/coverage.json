@@ -1,0 +1,26 @@
+{
+  "_meta": {
+    "as_of": null,
+    "status": "UNSIGNED — NOT FOR PROSPECT USE. There is no committed source of truth for XBorderCo's enabled countries: the live list is runtime database state (supported_countries), and neither xbc-docs nor the MVP repo carries a checked-in copy. Until an owner fills the lists below and sets status to 'signed', compute/market-coverage.ts refuses to produce a coverage section and the report omits it. Do NOT populate this from memory — a wrong 'covered today' is the one claim in the report a prospect can disprove in month one.",
+    "owner": "John / Máire",
+    "source": null,
+    "note": "Same discipline as thresholds.json and supported-providers.json: XBC facts live in data files so they are auditable and updatable without touching any instruction text."
+  },
+  "statuses": {
+    "covered_today": "XBorderCo is registered and filing in this jurisdiction now, and can be activated for a merchant on onboarding.",
+    "roadmap": "Not available yet. 'expected' states when, and is a plan rather than a commitment.",
+    "not_planned": "No current plan to support this jurisdiction.",
+    "out_of_scope": "Outside what XBorderCo does at all — most commonly the merchant's own domestic obligations in their country of establishment."
+  },
+  "covered_today": [],
+  "roadmap": [
+    {
+      "code": "US",
+      "name": "United States",
+      "expected": "2027",
+      "note": "Confirmed unavailable through 2026 (John, 26 Aug 2026). Sub-jurisdiction scope (which states, at what point) not yet defined — fill before this row is quoted."
+    }
+  ],
+  "not_planned": [],
+  "out_of_scope_rule": "The merchant's head-office country, taken from their Stripe tax settings, is always reported as out of scope: domestic VAT/GST in the country you are established in is your own obligation and is never assessed by this analysis."
+}

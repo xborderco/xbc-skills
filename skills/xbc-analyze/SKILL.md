@@ -1,14 +1,18 @@
 ---
 name: xbc-analyze
-description: Analyse a Stripe account read-only and produce reports the merchant keeps — tax-exposure by country (registration thresholds crossed/approaching), growth simulation, and payment/compliance cost comparison (Paddle, Lemon Squeezy, Stripe Managed Payments, DIY, XBC). Use when a merchant wants to understand their cross-border tax exposure, simulate growth, or compare provider costs from their own Stripe data.
-compatibility: Node.js >= 18 and npm. Network access to api.stripe.com only. Requires a read-only restricted Stripe key the user creates (never a secret key).
+description: "Analyse a merchant's Stripe data read-only — from a read-only API key or a Dashboard CSV export — and produce a report they keep: revenue by country, registration thresholds needing attention, what their invoices show about business customers and tax numbers, and what integrating XBorderCo would involve. Use when a merchant wants to understand their cross-border tax exposure from their own Stripe data."
+compatibility: Node.js >= 18 and npm. Two data paths — a read-only restricted Stripe key the user creates (never a secret key), reaching api.stripe.com only; or a Stripe Dashboard CSV export, which needs no key and no network at all.
 ---
 
-# xbc-analyze — merchant tax & cost analysis from your own Stripe data
+# xbc-analyze — merchant tax analysis from your own Stripe data
 
-Everything runs locally. Data fetched from Stripe stays in `xbc-analysis/` inside
-this skill's directory; reports are markdown files the user keeps. Nothing is
-sent to XBC or anywhere else. Read `SECURITY.md` for the verifiable claims.
+Everything runs locally. Data stays in `xbc-analysis/` inside this skill's
+directory; the report is a markdown file the user keeps. Nothing is sent to XBC or
+anywhere else. Read `SECURITY.md` for the verifiable claims.
+
+There are two ways in: a read-only Stripe key, or a CSV export from the Stripe
+Dashboard. The CSV path needs no key, no install and no network. It also cannot
+carry everything — Step 3 states the trade honestly and lets the user choose.
 
 **SKILL_DIR** below means the directory containing this file. Run every command
 from SKILL_DIR.
@@ -19,34 +23,86 @@ from SKILL_DIR.
   and compute scripts only — that's the point of this skill: the user approves
   known, inspectable code.
 - ❌ NEVER read, print, or ask for the Stripe key. ✅ The key lives only in
-  `.env`; the runner loads it itself.
-- ❌ NEVER recalculate or estimate numbers for reports. ✅ Every number in a
-  report comes verbatim from a file in `xbc-analysis/computed/`.
+  `.env`; the runner loads it itself. On the CSV path there is no key at all.
+- ❌ NEVER recalculate or estimate numbers for the report. ✅ Every number comes
+  verbatim from a file in `xbc-analysis/computed/`. If a section needs a number
+  no compute script produced, the section does not go in.
 - ❌ NEVER proceed past a failed step. ✅ Each step's output is the gate for the
   next.
-- ❌ NEVER call the raw-Stripe DIY row "the cheapest" — its figure is
-  processing FEES ONLY. ✅ Always pair it with its `diy_compliance_addon`
-  (registrations cost real money — many countries require hiring a local
-  agent), or state that compliance costs are excluded.
+- ❌ NEVER describe what XBorderCo covers, supports, charges, or is liable for
+  from memory or from general knowledge. ✅ Those facts come only from
+  `assets/coverage.json`, `assets/supported-providers.json` and
+  `assets/integration.json`. When one of those files says the data is unsigned or
+  undocumented, say so or omit the section — never fill the gap.
+- ❌ NEVER default to "supported". ✅ Some Stripe setups (PaymentIntents used
+  directly, the legacy Charges API) cannot be processed at all. Silence there is
+  the costliest error this skill can make, because the merchant finds out after
+  committing.
 - ❌ NEVER editorialize about the report in chat ("the numbers are honest…",
-  "XBC is not the cheapest…", previewing verdicts before delivery). ✅ Deliver
-  the report and a neutral 3-bullet summary; the report speaks for itself.
-- The verbatim texts in `assets/cta-copy.md` (value statement, CTA footer, email
-  offer, design-partner offer, fit-verdict phrasings) are used exactly as
-  written — no rewording.
+  previewing verdicts before delivery). ✅ Deliver the report and the short
+  closing message in Step 7; the report speaks for itself.
+- ❌ NEVER answer a question you are not certain of. ✅ Say you don't know, log
+  it, move on. This is tax. A confident wrong answer about a rate, a deadline or
+  a liability is worse than no answer, and the person asking usually cannot tell
+  the difference. See Step 8 for the test and what to do instead.
+- The verbatim texts in `assets/cta-copy.md` are used exactly as written — no
+  rewording. That file is XBC speaking, kept separate from the analysis on
+  purpose.
+
+**The register.** The report says what the merchant's data shows, and what XBC
+does. It does not tell them what it means for them, what to do about it, or how
+to feel about it. Do not quantify consequences (penalties, interest, what
+non-compliance costs), do not sequence their tax decisions, and do not add
+recommendations. A report that opens "not tax advice" cannot then give it.
+
+## How to write
+
+Write every chat message in ASD-STE100 Simplified Technical English.
+
+- Write one instruction in one sentence.
+- Use no more than 20 words in an instruction sentence.
+- Use no more than 25 words in a descriptive sentence.
+- Use the active voice.
+- Start an instruction with the verb. Say "Open the page", not "You should open the page".
+- Use the same word for the same thing every time.
+- Keep the articles. Do not delete words to make a sentence shorter.
+- Use a list when there is more than one item.
+- Do not put more than three nouns together.
+- Do not use a word in two different meanings.
+
+This rule covers your own chat messages. It does not cover the verbatim blocks in
+`assets/cta-copy.md`, which are used exactly as written.
+
+## What to say in chat
+
+**The chat is a progress bar. The report is the deliverable.**
+
+**Say what happens next. Do not narrate what you are doing.** One line, then act.
+
+Good: "Installing the Stripe library locally. About 30 seconds."
+Bad: "I'll now run npm install to install the dependencies, and then I'll verify
+your key by running the check-key action, which probes each scope…"
+
+At each step, say two things and stop:
+
+1. The step that is complete.
+2. The one action the user must do next.
+
+Do not explain the data in chat. Do not preview a finding. Do not repeat a caveat
+that the report already carries. Do not quote a JSON field name or a file name at
+the user. Do not list what a command returned when one line covers it.
+
+One exception. If the analysis flags any market as needing attention, say the
+count in one sentence. Give no detail. The report gives the detail.
 
 ## The journey
 
-This skill runs as a guided journey: **0** audit · **1** intro · **2** setup ·
-**3** connect data · **4** tax exposure · **5** fit · **6** cost comparison ·
-**7** design-partner offer · **8** next steps · **9** questions (optional). The
-data for every selected analysis is fetched **once** in Step 3; Steps 4 and 6
-only run for the analyses chosen in Step 1. The hard gate never relaxes: never
-render a number a `compute/` script hasn't written to `xbc-analysis/computed/`.
+**0** audit · **1** intro · **2** setup · **3** connect data (**3A** key or **3B**
+CSV) · **4** analyse · **5** fit · **6** report · **7** close · **8** questions.
 
 Before writing any report text, read `assets/example-report.md` — the worked
-example that sets the tone, structure, and honest framing (including the neutral
-3-bullet chat summary). Match its voice; never copy its numbers.
+example that sets tone, structure and honest framing (including the shape of the
+closing chat message). Match its voice; never copy its numbers.
 
 ## Step 0 — Security audit (offer first)
 
@@ -69,151 +125,386 @@ Be honest — if anything contradicts `SECURITY.md`, say so. Start from
 
 ## Step 1 — Introduction and consent
 
-Orient the user (your own words, covering exactly this): this skill analyses
-their **own** Stripe account **read-only** and produces markdown reports they
-keep — tax exposure by country, an optional growth simulation, and a provider
-cost comparison. Everything runs locally; the only network access is to their
-own Stripe account (`api.stripe.com`); nothing is sent to XBC. It needs a
-read-only restricted Stripe key they create (never their secret key) and takes a
-few minutes.
+Say this much, and no more. Six lines. They can ask for detail.
 
-Then ask which analyses they want (any combination):
-- **A — Tax exposure**: revenue by country, registration thresholds crossed or
-  approaching, catalog sanity check.
-- **B — Growth simulation**: thresholds and DIY compliance costs at +20/30/100%
-  growth (or their own rate). Requires A.
-- **C — Cost comparison**: what their actual mix costs on Paddle, Lemon Squeezy,
-  Stripe Managed Payments, raw Stripe DIY, and XBC.
+> This reads your Stripe data and writes you one report.
+>
+> - It is read-only. Nothing is sent to XBorderCo. Everything runs on your machine.
+> - You choose how to give me the data: a read-only key, or a CSV export.
+> - The whole thing takes about five minutes.
+> - The report is not tax advice. XBorderCo built this.
+>
+> Ready to start?
 
-And: **one combined report or separate files?** (Separate files let them share
-only some.)
+Do not list the report sections here. Do not explain the threshold method. The
+report explains itself, and a long opening loses the reader before step one.
 
 ## Step 2 — Your payment setup
 
-This skill reads a **Stripe** account, so the provider is Stripe. Ask which
-integration type they use — **Payment Links / Hosted Checkout / Embedded** — so
-the fit assessment (Step 5) can speak to it; `assets/supported-providers.json`
-lists what's supported. If their integration code is in the working directory and
-they're happy for you to look, you may confirm the type from the code; otherwise
-just ask. Don't block on this.
+**Ask the user nothing here.** The account already knows how it takes payments,
+and the person running this is often a finance lead who cannot answer "Payment
+Links or Elements?" — asking it at step 2 loses them before any value has landed.
+
+`actions/fetch-checkout-config.ts` reads their Checkout sessions and Payment
+Links, and `compute/stripe-setup.ts` turns that into
+`detected_integration.patterns`.
+
+Ask only when detection fails, and only then. Detection fails when
+`detected.detectable` is false (no Checkout scope) or `patterns` is empty (no
+sessions in the window). In that case ask once, late, at the fit step:
+
+> One thing I could not read from the account: how you create payments and
+> subscriptions. Payment Links, Hosted Checkout, Elements, the Invoice or
+> Subscription API, or PaymentIntents directly?
+
+Never assume the supported case. An undetected, unasked integration is reported
+as unconfirmed.
 
 ## Step 3 — Connect your data
 
-**Key setup.** Tell the user to create a **restricted** key at
-https://dashboard.stripe.com/apikeys → "Create restricted key":
+**Offer both paths. Ask once.**
 
-- **"How will you be using this key?"** → choose **"Authorising an AI agent"**
-  (the option described as giving an AI agent such as Claude or Cursor
-  independent, read-only-capable access to your Stripe account). That is exactly
-  what this skill is — not "an integration you built" and not a generic
-  "third-party application."
-- On the permissions screen, set **Read** on the resource groups: **All Core**
-  (including **Balance** and **Balance Transaction Sources**), **All Billing**,
-  **All Checkout**, **All Payment Link**, and **Tax** — you can toggle each group
-  row to Read. **None** on everything else. **No Write anywhere. No Connect.**
-- Test mode is fine for trialling the FLOW, but test-mode numbers are simulated
-  (US-pricing fees, US-issued test cards) — reports carry a TEST MODE banner and
-  real analysis needs a live-mode key.
+> Two ways to give me your numbers. Both stay on this machine.
+>
+> **A — Read-only API key.** You make a read-only Stripe key. Takes about a
+> minute. This gives the full report.
+>
+> **B — CSV export.** You export your payments from the Stripe Dashboard and tell
+> me where the file is. No key, no install, nothing connects to Stripe.
+>
+> B is faster to set up. It leaves out four things a CSV cannot carry: your
+> invoicing and VAT-number breakdown, your recurring revenue, your product tax
+> codes, and the registrations you already hold.
+>
+> Which would you prefer?
 
-Then: `cp .env.example .env` and have them paste the key into `.env` themselves.
-They never tell you the key and never paste it into chat.
+Do not steer. B is a legitimate choice, and for a first look it is often the
+right one. If they pick B, go to **Step 3B** and skip the key entirely.
 
-**Install and verify the key:**
+## Step 3A — Read-only API key
+
+**Key setup.** Give the user these six lines and nothing more. Do not add the
+reasons — the reasons are in this file if they ask.
+
+> Make a read-only key. It takes about a minute.
+>
+> 1. Open https://dashboard.stripe.com/apikeys
+> 2. Click **Create restricted key**.
+> 3. For "How will you be using this key?", choose **Authorising an AI agent**.
+> 4. Set **Read** on: All Core, All Billing, All Checkout, All Payment Link, Tax.
+> 5. Leave everything else on **None**. Set no Write. Set no Connect.
+> 6. Copy the key.
+
+**You** create the file. Do not make the user run `cp`. Run this yourself:
+
+```
+cp .env.example .env
+```
+
+Then give them one line:
+
+> I have made the file. Open it, paste the key after `STRIPE_API_KEY=`, and save.
+> Do not paste the key into this chat. Tell me when it is saved.
+
+Open it for them if you can (`open -t .env` on macOS).
+
+**The key never goes in chat.** Not even a read-only one. The chat is stored and
+is sent onward with every later turn, `SECURITY.md` promises the key stays in
+`.env`, and Step 0 invites the reader's own agent to check exactly that. A
+read-only key still reads every customer, charge and invoice on the account, and
+restricted keys do not expire. If the user offers to paste it, decline and
+restate these two lines.
+
+Say one line about test mode only if they are on a sandbox account: *"A test key
+works, but the numbers are simulated. The report will say so."*
+
+**Install, then verify.** Say what you are about to do in one line, then run it:
+
+> Installing the Stripe library locally. About 30 seconds.
+
 ```
 npm install
 npx tsx src/run.ts actions/check-key.ts
 ```
+
+`npm install` must finish before anything else runs. The runner now stops with a
+plain message if it has not. Do not call this "installing the Stripe CLI" — this
+skill does not use the Stripe CLI, it uses the official `stripe` npm library, and
+Step 0 invites the reader to check that claim.
+
 **GATE:** proceed only if `ok: true`.
 - `read_only_verified: true` is the expected result for a read-only restricted
   key (the probe gets a 403 permission error). If it is NOT `true`, the key can
   attempt writes: warn plainly and recommend replacing it. The user MAY knowingly
   override after the warning — if they do, note "key was not verified read-only
-  (user accepted)" in every report.
-- If scopes are missing, offer to continue with only the analyses those scopes
-  allow, or have them edit the key.
+  (user accepted)" in the report.
+- If scopes are missing, say which sections that costs them and offer to continue
+  without those sections, or have them edit the key.
 
-**Fetch (once, for the selected analyses).** If `xbc-analysis/raw/` already has
-data, ask whether to reuse it or refetch.
+**State the window BEFORE you fetch. Always.** The default reads the last 12
+months only. For a business that has traded for years, that is the single biggest
+limit on what this report can tell them, and they must hear it before the fetch,
+not from a date stamp afterwards.
 
-| Analyses | Run |
-|---|---|
-| A or B | `npx tsx src/run.ts actions/fetch-charges.ts` · `fetch-customers.ts` · `fetch-tax-registrations.ts` · `fetch-tax-settings.ts` · `fetch-products-prices.ts` |
-| C | also `npx tsx src/run.ts actions/fetch-balance-transactions.ts` · `fetch-subscriptions.ts` |
+> I will read the last 12 months. That covers where you stand today.
+>
+> It will not show a threshold you crossed in an earlier year, and it cannot test
+> jurisdictions that measure over a longer period — Japan uses a base period two
+> financial years back.
+>
+> I can read further back instead. How long have you been selling?
 
-Default window is the trailing 12 months (`--from`/`--to` to override). If the
-user asks for a deeper window (multi-year history), warn them BEFORE fetching:
-high-volume accounts mean thousands of paged API calls (minutes of fetch time),
-larger summaries mean more agent-token cost to render, and pre-2019 charges carry
-sparser country data (more "unresolved" rows). Each action prints a count + file
-path — relay those. **GATE:** every selected fetch returned a count (zero counts
-are valid — note them).
+If they choose a longer window, warn them first: a high-volume account means
+thousands of paged API calls and several minutes, and charges before 2019 carry
+sparser country data, so more of them will not resolve to a country. Then pass
+the same `--from` and `--to` to **every** fetch below. A mismatch between the
+charges window and the invoices window skews the analysis, because every
+threshold window is anchored to the end of the fetched window.
 
-## Step 4 — Tax exposure (analyses A / B)
+**Fetch.** If `xbc-analysis/raw/` already has data, ask whether to reuse or
+refetch. Run them as one command, not eight — the user is watching.
 
-Run only if A was selected. Compute, then render:
-- A: `npx tsx compute/country-breakdown.ts` then `npx tsx compute/threshold-exposure.ts`
-- B: then `npx tsx compute/growth-scenarios.ts` (custom rate: `--rates=0.2,0.5`)
+```
+npx tsx src/run.ts actions/fetch-charges.ts && \
+npx tsx src/run.ts actions/fetch-customers.ts && \
+npx tsx src/run.ts actions/fetch-invoices.ts && \
+npx tsx src/run.ts actions/fetch-checkout-config.ts && \
+npx tsx src/run.ts actions/fetch-subscriptions.ts && \
+npx tsx src/run.ts actions/fetch-products-prices.ts && \
+npx tsx src/run.ts actions/fetch-tax-registrations.ts && \
+npx tsx src/run.ts actions/fetch-tax-settings.ts
+```
 
-**GATE:** each prints `status: ok` and a path under `xbc-analysis/computed/`.
+**GATE:** every fetch returned a count (zero counts are valid — note them). Say
+one line when it is done. Do not relay eight counts.
 
-Fill `assets/report-tax-exposure.md` (A) and `assets/report-growth.md` (B) from
-the computed JSON: numbers verbatim; keep methodology/caveat sections and the
-"data as of" stamps; render every `warnings` array and the TEST MODE banner when
-applicable. Deliver this report now (or hold for the combined file — see Step 8).
-Don't preview verdicts in chat.
+## Step 3B — CSV export
+
+No Stripe key. No `npm install`. Nothing connects to Stripe on this path.
+
+Give the user exactly this:
+
+> **Export your payments.**
+>
+> 1. Open https://dashboard.stripe.com/payments
+> 2. Click **Export** (top right of the payments table).
+> 3. Date range: click **Custom** and pick **at least the last 12 months**.
+> 4. Columns: change **Default (23)** to **All columns**.
+> 5. Click **Export**, then tell me where the file saved.
+>
+> Stripe's own help page for this: https://support.stripe.com/questions/exporting-payment-data
+
+**Both of those settings matter, so do not let either slide.**
+
+*Columns.* The Default set of 23 leaves out `Card Address Country`, which is how
+every sale is attributed to a country. Without it there is no analysis at all.
+The importer checks and names any missing column, so a wrong export fails
+immediately rather than producing a wrong report.
+
+*Date range.* Registration thresholds are annual. An export of "Today" or "Last
+month" cannot test them, and nearly every market comes back as "not enough data".
+Twelve months is the working minimum. Under 60 days the importer says the export
+is too short.
+
+Then run the importer yourself. Ask them for their country of establishment
+first — a CSV does not carry it, and the EU test needs it to exclude domestic
+sales:
+
+```
+npx tsx src/import-csv.ts --file="/path/to/unified_payments.csv" --home=IE
+```
+
+**GATE:** `status: ok`. Relay the charge count and the window in one line. The
+output also lists `sections_unavailable_on_this_path` — say those once, plainly,
+and do not repeat them at every later step.
+
+The importer writes the same `xbc-analysis/raw/` files the API path writes, so
+Step 4 onward is identical. Three computes will report `unavailable` or
+`blocked`; that is expected, not a failure.
+
+**One thing to carry through to the report.** On this path the analysis cannot
+see registrations the merchant already holds, so every market is shown as
+unregistered. `threshold-exposure.json` carries the warning. Render it — a
+merchant told to act on a market they already handle stops believing the rest.
+
+## Step 4 — Analyse
+
+One command. Order matters — `market-coverage.ts` reads what
+`country-breakdown.ts` writes.
+
+```
+npx tsx compute/country-breakdown.ts && \
+npx tsx compute/threshold-exposure.ts && \
+npx tsx compute/invoice-b2b.ts && \
+npx tsx compute/stripe-setup.ts && \
+npx tsx compute/market-coverage.ts
+```
+
+**GATE:** each prints a path under `xbc-analysis/computed/`. `status: ok` means
+render the matching section. Two scripts can legitimately print something else,
+and both are instructions, not failures:
+
+- `market-coverage.ts` printing `status: blocked` means XBC's coverage data is
+  unsigned. **Omit that section entirely** and describe XBC's country coverage
+  nowhere else in the report.
+- `invoice-b2b.ts` writing `has_invoice_data: false` means there are no paid
+  invoices. **Omit that section entirely.**
+
+Anything else non-zero is a failure — relay it and stop.
 
 ## Step 5 — Fit assessment
 
-Give a short, honest fit read from two inputs:
-- **Obligations** — from `computed/threshold-exposure.json` (analysis A): how
-  many jurisdictions are crossed / registration-likely, and how many approaching.
-  If A wasn't run, say obligations weren't analysed and skip this leg.
-- **Provider support** — Stripe, with the integration type from Step 2, mapped
-  against `assets/supported-providers.json` `fit_guidance`. All three Stripe
-  types are supported today.
+Work out the verdict from two inputs. Keep the working to yourself.
 
-State the verdict using the **verbatim fit phrasing** in `assets/cta-copy.md`
-(Strong / Roadmap / Not yet) — fill its brackets from the two inputs. Keep it to
-the verdict and its inputs; no embellishment.
+- **Obligations** — from `computed/threshold-exposure.json`: how many
+  jurisdictions are crossed or registration-likely, how many approaching, and how
+  many report `insufficient_data`.
+- **Provider support** — from `computed/stripe-setup.json`
+  `detected_integration.patterns`, mapped against
+  `assets/supported-providers.json` and its `fit_guidance`. Read the warnings
+  first. If `patterns` is empty or `detectable` is false, ask the Step 2 question
+  now — this is the one place it is worth the user's time.
 
-## Step 6 — Cost comparison (analysis C)
+Pick the **verbatim fit phrasing** from `assets/cta-copy.md` (Strong / Not yet
+supported / Roadmap / Unconfirmed / Not yet) and fill its brackets. The verdict
+goes in the **report**, not in chat.
 
-Run only if C was selected. Compute, then render:
-- `npx tsx compute/cost-comparison.ts` (pass `--home=XX` if it asks). When A was
-  also selected, this runs AFTER Step 4's computes (the journey order ensures it),
-  so the DIY column includes its compliance add-on.
+In chat, say two lines and move on:
 
-**GATE:** prints `status: ok` and a path.
+> Analysis done. [N] jurisdictions need attention.
+> Writing your report now.
 
-Fill `assets/report-cost-comparison.md` from the JSON: numbers verbatim; render
-MoR rows as ranges; include the DIY all-in line, the basis explanation, the
-structure section (incl. compliance burden + doing-nothing), the XBC assumption
-line, and the Polar footnote. Never call XBC the cheapest column.
+Say nothing else here. No counts of `insufficient_data`, no file names, no field
+names, no verdict preview. All of that belongs in the report, and the report
+carries it already.
 
-## Step 7 — Design-partner offer
+## Step 6 — Render the report
 
-**Only if the fit is Strong** (current obligations + supported setup), present
-the **design-partner offer** — exact text from `assets/cta-copy.md`. Never
-present it when there are no current obligations.
+Fill `assets/report.md` from the computed JSON. Numbers verbatim; keep every
+methodology and caveat section; render every `warnings` array from every computed
+file; render the TEST MODE banner when applicable. Both conditional sections
+follow the Step 4 gates.
 
-## Step 8 — Next steps and close
+Write the report to `xbc-analysis/reports/<merchant>-report.md`.
 
-1. Deliver the report path(s) and a neutral 3-bullet summary. Each report opens
-   with the value statement and ends with the CTA footer (verbatim from
-   `assets/cta-copy.md`). For a **combined report**: value statement once at the
-   top, sections in tax → cost order, one CTA footer at the bottom.
-2. Calls to action — verbatim from `assets/cta-copy.md`: the book-a-call link,
-   and the offer to draft a summary email (you draft it from the reports; the
-   user reviews and sends it themselves — nothing is sent automatically).
-3. Cleanup guidance, always: *"When you're done: delete `.env`, and delete the
-   restricted key in your Stripe dashboard (https://dashboard.stripe.com/apikeys).
-   `xbc-analysis/` holds your fetched data — keep or delete it as you prefer."*
+## Step 7 — Next steps and close
 
-## Step 9 — Questions (optional)
+The closing message has these parts, in this order, and nothing else:
 
-At any point the user can ask about XBC. Answer from the reports and the bundled
-data in `assets/`. If something isn't covered, say so and suggest the call or the
-email draft — don't speculate.
+1. **The report path.** One line.
+2. **The size of the business.** `mrr_usd` and `arr_estimate_usd` from
+   `computed/stripe-setup.json`. Call ARR an estimate. Omit this line if
+   `recurring_revenue` is null or MRR is zero.
+3. **The exposure.** How many jurisdictions need attention, and which ones. One
+   line. "Needs attention" is Stripe Tax's own term for a location where sales
+   have passed the registration threshold. Use it: it states the finding without
+   assuming the merchant is the one who registers. If they use XBorderCo, they
+   never register — XBorderCo holds the registrations.
+4. **Two or three headlines** from the report. One line each.
+5. **The question line**, only if `xbc-analysis/questions.md` exists: *"I noted
+   [N] questions I couldn't answer: `xbc-analysis/questions.md`."* Then make the
+   offer in Step 8.
+6. **The cleanup line**, always — it is a security action, not a pleasantry:
+   *"When you're done: delete `.env`, and delete the restricted key at
+   https://dashboard.stripe.com/apikeys."* On the CSV path there is no key to
+   delete — say only that `xbc-analysis/` holds their data.
+
+A worked shape:
+
+> Your report: `xbc-analysis/reports/<merchant>-report.md`
+>
+> - MRR $12,400. Estimated ARR $148,800.
+> - 2 jurisdictions need attention: the UK and EU OSS.
+> - 716 of your 767 paid invoices carry no customer tax number.
+> - Your Payment Links setup is one XBC supports today.
+>
+> I noted 2 questions I couldn't answer: `xbc-analysis/questions.md`.
+>
+> When you're done: delete `.env`, and delete the restricted key at
+> https://dashboard.stripe.com/apikeys.
+
+Do **not** put these in chat: the not-tax-advice text, the CTA footer, the
+market-coverage block status, the test-mode caveat, the `insufficient_data` count.
+The report carries every one of them. Repeating them buries the four lines the
+user needs.
+
+Offer the email draft only if they ask a follow-up question, and offer it in one
+sentence.
+
+## Step 8 — Questions
+
+The user can ask anything, at any point in the journey. Most of it will be
+outside what this skill can answer. That is expected, and saying so is the
+correct behaviour, not a failure.
+
+### The test — apply it to every question
+
+1. Is the answer a number already in `xbc-analysis/computed/`? → **Answer it.**
+2. Is the answer written down in a bundled file — `assets/integration.json`,
+   `assets/supported-providers.json`, `assets/coverage.json`,
+   `assets/thresholds.json`, `SECURITY.md`, this file? → **Answer it, and say
+   which file it came from.**
+3. Anything else → **Do not answer. Log it.**
+
+There is no fourth branch. If you find yourself reasoning towards an answer
+rather than reading one, you are in branch 3.
+
+**Never answer from general knowledge, however confident you feel**: tax rates,
+filing deadlines, penalties, interest, VAT treatment of a specific product,
+place-of-supply rules, entity structuring, treaties, whether they must register,
+whether they should register, what happens if they do not. Also never: XBC
+pricing, contract terms, onboarding dates, or any liability position beyond the
+words already in `assets/integration.json`.
+
+Worked examples:
+
+- *"What VAT rate would apply to my product in Germany?"* → branch 3. Do not
+  answer. The rate is not in any bundled file, and being close is not good enough.
+- *"How is the EU figure calculated?"* → branch 1/2. Answer: the method is in the
+  computed file's own methodology notes.
+- *"Should we register in the UK now or wait?"* → branch 3. That is advice.
+- *"Does XBC support Adyen?"* → branch 2. `supported-providers.json` says
+  roadmap. Answer from it.
+- *"What does XBC charge?"* → branch 3. No bundled file states a price.
+
+### What to say
+
+Short, plain, no apology, no hedging paragraph:
+
+> I don't know, and I'd rather not guess on a tax question. I've noted it for
+> XBorderCo — you can send them the list at the end, or keep it.
+
+Then log it. Do not offer a partial answer first. Do not add "but generally…".
+
+### The question log
+
+Append every branch-3 question to `xbc-analysis/questions.md`, as you go — not at
+the end, so the list survives if the session stops. Create the file on the first
+question, with this shape:
+
+```markdown
+# Questions for XBorderCo
+Collected during an xbc-analyze run. Nothing here has been sent anywhere.
+
+1. What VAT rate would apply to my product in Germany?
+2. Should we register in the UK now or wait?
+```
+
+Record the user's question in their own words. Do not add your own commentary,
+and do not include any figure from their report — the list is questions only, so
+they can send it without sending their numbers.
+
+At Step 7, if the file exists, add one line to the closing message:
+
+> I noted [N] questions I couldn't answer: `xbc-analysis/questions.md`.
+
+Then offer, once, using the verbatim **Question-list offer** in
+`assets/cta-copy.md`. If they choose to send, draft the email from the
+**Question email template** and show it to them. **You never send it.** They copy
+it, or you open their mail client — their choice, their send. Nothing leaves this
+machine without them doing it.
+
+If they say keep, say nothing more about it. The file is theirs.
 
 ## Failures
 

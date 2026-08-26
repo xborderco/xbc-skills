@@ -91,11 +91,34 @@ export interface ChargeRecord {
   invoice: string | null;
 }
 
+export interface CustomerTaxId {
+  type: string;
+  country: string | null;
+  /** Stripe's own check. "verified" only ever comes from Stripe (VIES/HMRC);
+   *  "unavailable" means Stripe does not validate that type — NOT invalid. */
+  verification_status: string | null;
+}
+
 export interface CustomerRecord {
   id: string;
   address_country: string | null;
   address_state: string | null;
   shipping_country: string | null;
+  tax_ids?: CustomerTaxId[];
+}
+
+export interface InvoiceRecord {
+  id: string | null;
+  created: string;
+  status: string | null;
+  billing_reason: string | null;
+  currency: string;
+  total: number;
+  amount_paid: number;
+  customer: string | null;
+  customer_country: string | null;
+  customer_tax_ids: { type: string | null; value: string | null }[];
+  supplier_tax_id_count: number;
 }
 
 export type Tier =
@@ -145,6 +168,17 @@ export function resolveCountry(
 /** Net revenue of a charge in major units of its own currency. */
 export function netMajor(charge: ChargeRecord): number {
   return toMajor(charge.amount - charge.amount_refunded, charge.currency);
+}
+
+/** Reads the analysis window a fetch action stamped onto its raw file. Every
+ *  window-sensitive compute anchors to this, never to "now" — otherwise a run
+ *  over a historical --from/--to window measures a period with no data in it
+ *  and reports a false all-clear. */
+export function readAnalysisWindow(w: { from: string; to: string }): {
+  from: Date;
+  to: Date;
+} {
+  return { from: new Date(w.from), to: new Date(w.to) };
 }
 
 export const EU_MEMBERS = new Set([

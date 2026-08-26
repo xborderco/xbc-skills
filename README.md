@@ -13,7 +13,7 @@ is no Claude-specific plugin packaging; the same folder works everywhere.
 
 | Skill | What it does |
 |-------|--------------|
-| [`xbc-analyze`](skills/xbc-analyze/) | Read-only analysis of a merchant's Stripe account → tax-exposure by country (registration thresholds crossed/approaching), growth simulation, and payment/compliance cost comparison (Paddle, Lemon Squeezy, Stripe Managed Payments, DIY, XBC). Closes with a fit assessment and an optional design-partner CTA. Opens with an offered security audit. Everything runs locally; the merchant keeps the markdown reports. See its [`SKILL.md`](skills/xbc-analyze/SKILL.md) and [`SECURITY.md`](skills/xbc-analyze/SECURITY.md). |
+| [`xbc-analyze`](skills/xbc-analyze/) | Read-only analysis of a merchant's Stripe account → one markdown report: revenue by country, registration thresholds crossed or approaching (tested in each jurisdiction's own currency and measurement window), what their invoices show about business customers and tax numbers, which of their markets XBC covers, and what integrating would involve. Closes with a fit assessment. Opens with an offered security audit. Everything runs locally; the merchant keeps the report. See its [`SKILL.md`](skills/xbc-analyze/SKILL.md) and [`SECURITY.md`](skills/xbc-analyze/SECURITY.md). |
 
 ## Install
 
@@ -74,7 +74,7 @@ and nothing leaves your machine. Read the skill's `SKILL.md` first.
 > reports into `xbc-analysis/` *inside the installed skill directory*. Treat
 > these as ephemeral — the skill tells you to delete `.env` and revoke the key
 > when you're done. Re-running `npx skills add` to update may reset the skill
-> directory, so copy out any reports you want to keep.
+> directory, so copy out any report you want to keep.
 
 ## Repo layout
 

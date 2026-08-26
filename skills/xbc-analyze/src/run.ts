@@ -1,8 +1,7 @@
 import { existsSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { config as loadDotenv } from "dotenv";
-import Stripe from "stripe";
+import type StripeType from "stripe";
 
 // xbc-analyze action runner (pattern borrowed from XBC's internal manual-test
 // tooling). The Stripe key lives ONLY in the gitignored .env next to
@@ -15,6 +14,22 @@ import Stripe from "stripe";
 // refused outright — see SKILL.md "Create your restricted key".
 
 const SKILL_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+
+// dotenv and stripe are imported DYNAMICALLY, after this check. With static
+// imports, running before `npm install` threw a raw ERR_MODULE_NOT_FOUND stack
+// trace from deep inside Node's ESM resolver — unreadable, and it told the user
+// nothing about what to do.
+if (!existsSync(join(SKILL_ROOT, "node_modules", "stripe"))) {
+  fail(
+    "Dependencies are not installed yet.\n" +
+      `Run this first, from ${SKILL_ROOT}:\n\n` +
+      "  npm install\n\n" +
+      "It downloads the Stripe library and takes about 30 seconds. Then run this command again."
+  );
+}
+
+const { config: loadDotenv } = await import("dotenv");
+const { default: Stripe } = await import("stripe");
 
 loadDotenv({ path: join(SKILL_ROOT, ".env"), quiet: true });
 
@@ -69,7 +84,7 @@ for (let i = 0; i < rest.length; i++) {
 const stripe = new Stripe(apiKey, { maxNetworkRetries: 2 });
 
 type StripeAction = (
-  stripe: Stripe,
+  stripe: StripeType,
   params: Record<string, string>
 ) => Promise<unknown>;
 

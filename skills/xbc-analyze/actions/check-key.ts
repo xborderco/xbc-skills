@@ -33,10 +33,14 @@ export default async function checkKey(stripe: Stripe) {
   const probes: Record<string, () => Promise<unknown>> = {
     charges: () => stripe.charges.list({ limit: 1 }),
     customers: () => stripe.customers.list({ limit: 1 }),
+    // Separate probe: the tax-ID expand needs its own permission, and losing it
+    // silently would turn "we couldn't check" into "no verified tax numbers".
+    customer_tax_ids: () =>
+      stripe.customers.list({ limit: 1, expand: ["data.tax_ids"] }),
+    invoices: () => stripe.invoices.list({ limit: 1 }),
     subscriptions: () => stripe.subscriptions.list({ limit: 1 }),
     products: () => stripe.products.list({ limit: 1 }),
     prices: () => stripe.prices.list({ limit: 1 }),
-    balance_transactions: () => stripe.balanceTransactions.list({ limit: 1 }),
     tax_registrations: () => stripe.tax.registrations.list({ limit: 1 }),
     tax_settings: () => stripe.tax.settings.retrieve(),
   };
@@ -54,6 +58,22 @@ export default async function checkKey(stripe: Stripe) {
   const missing = Object.entries(scopes)
     .filter(([, v]) => v === "missing")
     .map(([k]) => k);
+
+  // What each missing scope actually costs, so the user decides with the facts.
+  const cost: Record<string, string> = {
+    charges: "Nothing can be analysed — charges are the base dataset.",
+    customers: "Country attribution loses its third fallback tier.",
+    customer_tax_ids:
+      "The invoicing section cannot show which customer tax numbers Stripe verified. It reports that as unavailable, not as zero.",
+    invoices: "The invoicing and business-customer section is omitted entirely.",
+    subscriptions: "Subscription counts in the Stripe-setup section are omitted.",
+    products: "The catalogue and tax-code figures are omitted.",
+    prices: "Tax-inclusive vs exclusive pricing is not reported.",
+    tax_registrations:
+      "Registrations you already hold in Stripe Tax are invisible, so a jurisdiction you ARE registered for may be reported as actionable.",
+    tax_settings:
+      "Your head-office country is unknown, which changes the EU scheme test and which market counts as domestic.",
+  };
 
   // Optional nicety: account display name for report headers (needs the
   // Account read scope; absence is fine — the agent asks the user instead).
@@ -80,7 +100,10 @@ export default async function checkKey(stripe: Stripe) {
     }),
     ...(missing.length > 0 && {
       missing_scopes: missing,
-      hint: "Edit the restricted key in the Stripe dashboard and grant Read on the missing resources, or proceed with only the analyses these scopes allow.",
+      missing_scope_cost: Object.fromEntries(
+        missing.map((m) => [m, cost[m] ?? "Some figures will be unavailable."])
+      ),
+      hint: "Edit the restricted key in the Stripe dashboard and grant Read on the missing resources, or proceed knowing which sections are omitted.",
     }),
   };
 }

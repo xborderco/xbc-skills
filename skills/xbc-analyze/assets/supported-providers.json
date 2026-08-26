@@ -1,32 +1,64 @@
 {
   "_meta": {
-    "as_of": "2026-06-15",
-    "source": "docs.xborderco.com — overview/integration-types and other-providers",
+    "as_of": "2026-08-26",
+    "source": "docs.xborderco.com — overview/integration-types and other-providers; unsupported list from xbc-docs 07-merchant-integration-guide.md §7.5 'Not Supported'",
     "note": "Bundled mirror of the published supported-providers reference. Kept in sync with apps/docs-site/src/content/docs/supported-providers.mdx by release discipline (a future version fetches this from the docs site directly). Used by the fit-assessment step; no numbers, no network."
   },
   "supported_providers": [
     {
       "provider": "Stripe",
       "status": "supported",
-      "summary": "Stripe is the only payment provider XBorderCo integrates with today. All three Stripe integration types are supported.",
+      "summary": "Stripe is the only payment provider XBorderCo integrates with today, and only for integrations that produce a Stripe invoice. XBorderCo applies tax when an invoice is created, so a setup that never creates one cannot be processed.",
       "integration_types": [
         {
           "type": "Payment Links",
           "support": "supported",
           "code_required": "none",
-          "notes": "No-code; the payment page lives on buy.stripe.com. Only available to certain Stripe customers, and there is a first-subscription dashboard caveat."
+          "notes": "No-code; the payment page lives on buy.stripe.com. Only available to certain Stripe customers. First-subscription caveat: Stripe creates and pays the first invoice atomically, so it cannot be amended — the customer is pointed to XBorderCo's own tax invoice via the invoice footer. Renewals are amended normally."
         },
         {
           "type": "Hosted Checkout",
           "support": "supported",
           "code_required": "light",
-          "notes": "Also called Stripe Checkout Sessions. Your backend creates the session and redirects the customer to a Stripe-hosted page."
+          "notes": "Also called Stripe Checkout Sessions. Your backend creates the session and redirects the customer to a Stripe-hosted page. Same first-subscription caveat as Payment Links; one-off payments are invoiced by XBorderCo after checkout completes."
         },
         {
           "type": "Embedded",
           "support": "supported",
           "code_required": "heaviest",
           "notes": "Stripe Elements inside your own pages. XBorderCo's preferred integration type — it gives the clearest view of the transaction."
+        },
+        {
+          "type": "Invoice API (direct invoices.create)",
+          "support": "supported",
+          "code_required": "light",
+          "notes": "Create invoices with auto_advance: false so the draft is held for XBorderCo to amend, and give customers an address.country."
+        },
+        {
+          "type": "Subscription API (direct subscriptions.create)",
+          "support": "supported",
+          "code_required": "light",
+          "notes": "Set a future billing_cycle_anchor with proration_behavior: 'none' so the first invoice is created as a draft."
+        }
+      ],
+      "unsupported_integration_types": [
+        {
+          "type": "PaymentIntents (direct)",
+          "support": "not_supported",
+          "why": "No invoice is created, so XBorderCo never sees the transaction and cannot apply or account for tax on it.",
+          "detection_signal": "Charges in computed/stripe-setup.json carrying no invoice id."
+        },
+        {
+          "type": "Charges API (legacy)",
+          "support": "not_supported",
+          "why": "No invoice is created, so XBorderCo never sees the transaction and cannot apply or account for tax on it.",
+          "detection_signal": "Charges in computed/stripe-setup.json carrying no invoice id."
+        },
+        {
+          "type": "Checkout mode: payment with invoice_creation.enabled",
+          "support": "not_supported",
+          "why": "Stripe finalises the invoice before XBorderCo can amend it — a race condition. The setting has to be off.",
+          "detection_signal": "Checkout sessions with invoice_creation.enabled, counted by actions/fetch-checkout-config.ts and reported in computed/stripe-setup.json warnings."
         }
       ]
     }
@@ -38,5 +70,5 @@
       "notes": "Integrations beyond Stripe are on the roadmap. If you use another provider and want to be in touch about future integrations, contact the XBorderCo team."
     }
   ],
-  "fit_guidance": "Map the merchant's setup to a verdict. SUPPORTED if they run Stripe with any of Payment Links / Hosted Checkout / Embedded. ROADMAP if they use a non-Stripe provider (their obligations still hold; XBC support is on the roadmap — point them to a conversation). When you cannot tell the integration type, say so and proceed on 'Stripe, type unconfirmed'."
+  "fit_guidance": "Map the merchant's setup to a verdict, and NEVER default to supported. SUPPORTED only if they run Stripe through one of the listed supported integration_types. NOT YET SUPPORTED if their setup appears in unsupported_integration_types — say so plainly; silence here is the costliest error this assessment can make, because it is discovered after they have committed. ROADMAP if they use a non-Stripe provider (their obligations still hold; XBC support is on the roadmap). When the integration type cannot be confirmed, say it is unconfirmed and name what would confirm it — do not assume the supported case. If computed/stripe-setup.json reports charges without invoices, raise that with the merchant before stating any verdict."
 }
