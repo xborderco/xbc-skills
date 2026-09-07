@@ -38,6 +38,12 @@ interface ThresholdRow {
   // true when the source value could not be parsed. Never scored — see the
   // generator. Reported as insufficient_data, never as clear or crossed.
   unscorable?: boolean;
+  // true when the generator could not fully trust the parsed rule. Such a row
+  // is NEVER scored — the report shows revenue there and the reasons, and the
+  // status is insufficient_data. A "crossed" on an unverified rule is a
+  // fabricated liability; a "clear" on one is a false all-clear.
+  needs_review?: boolean;
+  review_reasons?: string[];
   lookback:
     | "calendar_year"
     | "rolling_12m"
@@ -60,12 +66,19 @@ interface Registration {
 
 const rawCharges = readRaw<{
   _meta?: { key_mode?: string };
-  window: { from: string; to: string };
+  window: { from: string; to: string; trading_since?: string };
   charges: ChargeRecord[];
 }>("charges.json");
 const charges = rawCharges.charges;
 const keyMode = rawCharges._meta?.key_mode ?? "unknown";
 const dataWindow = readAnalysisWindow(rawCharges.window);
+// When the merchant has said the data is their COMPLETE history from this date,
+// every day before it is known to hold no sales. A 12-day-old business then
+// has full coverage of a 12-month window — not 3% — because the other 353 days
+// are not missing, they are empty.
+const tradingSince = rawCharges.window.trading_since
+  ? new Date(rawCharges.window.trading_since)
+  : null;
 const { customers } = readRaw<{ customers: CustomerRecord[] }>(
   "customers.json"
 );
@@ -88,6 +101,13 @@ const thresholds = readAsset<{
 const fx = readAsset<FxRates>("fx-rates.json");
 
 const customerCountries = buildCustomerCountryMap(customers);
+
+// The merchant's own country of establishment. Every threshold in this dataset
+// is the NON-ESTABLISHED (cross-border) rule, so applying it to domestic sales
+// is simply wrong: a UK company selling in the UK is not a NETP. Domestic sales
+// are reported separately and never scored or summed into at-risk revenue.
+const isDomestic = (country: string | null): boolean =>
+  home !== null && country !== null && country === home;
 
 // Every measurement window is anchored to the END OF THE ANALYSIS WINDOW, never
 // to "now". Anchoring to now meant a run over a historical --from/--to window
@@ -159,9 +179,13 @@ function measurementWindow(lookback: ThresholdRow["lookback"]): {
 function coverageOf(w: { from: Date; to: Date }): number {
   const required = w.to.getTime() - w.from.getTime();
   if (required <= 0) return 1;
+  const knownFrom =
+    tradingSince !== null && tradingSince.getTime() <= dataWindow.from.getTime()
+      ? -Infinity // everything before the trading start is known-empty
+      : dataWindow.from.getTime();
   const overlap =
     Math.min(w.to.getTime(), dataWindow.to.getTime()) -
-    Math.max(w.from.getTime(), dataWindow.from.getTime());
+    Math.max(w.from.getTime(), knownFrom);
   return Math.max(0, Math.min(1, overlap / required));
 }
 
@@ -203,11 +227,20 @@ const coveredUsStates = new Set(
 const unassessed = new Map<string, { usd: number; tx: number }>();
 let unresolvedCountryUsd = 0;
 let unresolvedCountryTx = 0;
+let domesticUsd = 0;
+let domesticTx = 0;
 for (const { ch, loc } of resolved) {
   const usd = convert(netMajor(ch), ch.currency, "USD", fx) ?? 0;
   if (loc.country === null) {
     unresolvedCountryUsd += usd;
     unresolvedCountryTx += 1;
+    continue;
+  }
+  if (isDomestic(loc.country)) {
+    // Domestic revenue is neither "assessed" nor "unassessed" — it is out of
+    // scope of a cross-border analysis, and is reported as such.
+    domesticUsd += usd;
+    domesticTx += 1;
     continue;
   }
   let key: string | null = null;
@@ -248,6 +281,10 @@ const homeIsEu = home !== null && EU_MEMBERS.has(home);
 
 const rows = thresholds.jurisdictions.map((t) => {
   const isEuGroup = t.level === "country_group" && t.code === "EU";
+  // A country row for the merchant's own country. The row's rule is the
+  // non-established one, which does not apply to them. Revenue is still
+  // counted so the report can show it, but the row is never scored.
+  const isHomeRow = t.level === "country" && isDomestic(t.code);
   const effective = isEuGroup
     ? homeIsEu
       ? {
@@ -338,14 +375,21 @@ const rows = thresholds.jurisdictions.map((t) => {
     | "approaching"
     | "insufficient_data"
     | "clear"
-    | "no_tax_regime";
-  if (fxMissing) {
+    | "no_tax_regime"
+    | "domestic_out_of_scope";
+  if (isHomeRow) {
+    // Their own country. The non-established rule does not apply, and the
+    // domestic threshold is not modelled here. Never actionable.
+    status = "domestic_out_of_scope";
+  } else if (fxMissing) {
     // Charges were skipped for want of a rate, so the total is an undercount —
     // and an undercount is exactly what turns a crossing into a false "clear".
     status = "insufficient_data";
-  } else if (t.unscorable) {
-    // We could not read this jurisdiction's threshold. Saying "clear" would be
-    // a false all-clear; saying "crossed" would be a fabricated liability.
+  } else if (t.unscorable || t.needs_review) {
+    // We could not read this jurisdiction's threshold, or the generator did
+    // not trust what it read. Saying "clear" would be a false all-clear;
+    // saying "crossed" would be a fabricated liability. The row still shows
+    // revenue, and review_reasons say what is unverified.
     status = "insufficient_data";
   } else if (t.no_tax) {
     // No tax of this kind exists here, so no amount of revenue creates an
@@ -370,6 +414,8 @@ const rows = thresholds.jurisdictions.map((t) => {
   if (
     !t.no_tax &&
     !t.unscorable &&
+    !t.needs_review &&
+    !isHomeRow &&
     coverage < COVERAGE_FLOOR &&
     (status === "clear" || status === "approaching")
   ) {
@@ -407,6 +453,15 @@ const rows = thresholds.jurisdictions.map((t) => {
     threshold_amount: effective.amount,
     ...(t.no_tax && { no_tax: true }),
     ...(t.unscorable && { unscorable: true }),
+    ...(t.needs_review && {
+      needs_review: true,
+      review_reasons: t.review_reasons ?? [],
+    }),
+    ...(isHomeRow && {
+      domestic: true,
+      domestic_note:
+        "Your country of establishment. The threshold on this row is the rule for NON-established sellers and does not apply to you. Domestic obligations are your own and are not assessed by this analysis.",
+    }),
     ...(t.amount_exclusive && { amount_exclusive: true }),
     ...(t.tx_threshold && {
       tx_count: tx,
@@ -441,6 +496,7 @@ const severity = {
   insufficient_data: 3,
   clear: 4,
   no_tax_regime: 5,
+  domestic_out_of_scope: 6,
 } as const;
 rows.sort(
   (a, b) =>
@@ -469,6 +525,19 @@ const actionableScopesOverlap =
   actionable.some((r) => r.code === "US");
 
 const warnings: string[] = [];
+if (home === null) {
+  warnings.push(
+    "The country of establishment is not known, so domestic sales could not be separated from cross-border ones. Every threshold here is the rule for non-established sellers; if any market below is the merchant's own country, that row does not apply to them. Re-run with the home country set (tax settings on the API path, --home on the CSV path)."
+  );
+}
+const reviewRows = rows.filter((r) => r.needs_review && r.revenue_usd_equivalent > 0);
+if (reviewRows.length > 0) {
+  warnings.push(
+    `${reviewRows.length} market(s) with revenue have a threshold rule that has not passed review and were NOT assessed: ${reviewRows
+      .map((r) => `${r.jurisdiction} (${r.revenue_usd_equivalent} USD)`)
+      .join("; ")}. Each row lists what is unverified. 'Not enough data' there means the rule is unconfirmed, not that the market is clear.`
+  );
+}
 if (!registrationsKnown) {
   warnings.push(
     "Registrations you already hold could not be read, so every market below is shown as if you are not registered. If you are already registered somewhere, that market does not need attention — check the list against your own records."
@@ -488,7 +557,7 @@ if (shortCoverage.length > 0) {
       .map(
         (r) => `${r.jurisdiction}: ${r.measurement_window.data_coverage_pct}%`
       )
-      .join("; ")}). A negative result there is reported as 'insufficient_data', not 'clear'. Refetch with --from/--to covering the full window to test them.`
+      .join("; ")}). A negative result there is reported as 'insufficient_data', not 'clear'. Refetch with --from/--to covering the full window to test them. If the business only started trading inside this window, the data is complete, not short: re-run the CSV import with --trading-since=<first trading day>, or the API fetch with --from=<first trading day>, and the windows will be treated as fully covered.`
   );
 }
 if (keyMode === "test") {
@@ -530,6 +599,10 @@ const path = writeComputed("threshold-exposure.json", {
   analysis_window: {
     from: dataWindow.from.toISOString(),
     to: dataWindow.to.toISOString(),
+    ...(tradingSince !== null && {
+      trading_since: tradingSince.toISOString(),
+      note: "The merchant gave this as the day the business started trading, with the data covering everything since. Days before it count as covered with no sales.",
+    }),
   },
   summary: {
     registration_likely_required: rows.filter(
@@ -541,11 +614,19 @@ const path = writeComputed("threshold-exposure.json", {
       .length,
     clear: rows.filter((r) => r.status === "clear").length,
     no_tax_regime: rows.filter((r) => r.status === "no_tax_regime").length,
+    domestic_out_of_scope: rows.filter(
+      (r) => r.status === "domestic_out_of_scope"
+    ).length,
+    needs_review_unassessed: rows.filter((r) => r.needs_review).length,
     actionable_unregistered: actionable.map((r) => r.jurisdiction),
     at_risk_revenue_usd: atRiskUsd,
     at_risk_revenue_scopes: actionable.map((r) => r.jurisdiction),
     at_risk_revenue_meaning:
       "Revenue in the jurisdictions listed in at_risk_revenue_scopes, summed in USD at the bundled rate. It is REVENUE, not tax owed and not a liability estimate — this analysis cannot see whether tax was charged on any of it.",
+    // Sales in the merchant's own country. Out of scope of every cross-border
+    // rule here; never part of at_risk_revenue_usd.
+    domestic_revenue_usd: Math.round(domesticUsd * 100) / 100,
+    domestic_tx_count: domesticTx,
     us_revenue_unresolved_state_usd: Math.round(usNoStateUsd * 100) / 100,
     // Revenue in markets this dataset has no row for. Never assessed — report
     // it as unassessed, never as clear.
@@ -558,13 +639,15 @@ const path = writeComputed("threshold-exposure.json", {
     "Each jurisdiction is measured over its own documented window (calendar year, rolling 12 months, rolling four quarters, New York's sales tax quarters, or a base period), anchored to the END of the analysis window — never to today.",
     "Only the jurisdictions present in this dataset are assessed. Revenue in any other market is reported under summary.unassessed_markets and is NOT an all-clear — no threshold was applied to it.",
     "New York is measured over the four immediately preceding New York sales tax quarters (Dec-Feb, Mar-May, Jun-Aug, Sep-Nov), which are not calendar quarters and exclude the current incomplete quarter. Its transaction leg is 'more than 100 sales', so it is met at 101, not 100.",
-    "Where the fetched data covers less than 95% of a jurisdiction's window, a negative result is reported as 'insufficient_data' rather than 'clear'. A crossing found on partial data is still reported as crossed.",
+    "Where the fetched data covers less than 95% of a jurisdiction's window, a negative result is reported as 'insufficient_data' rather than 'clear'. A crossing found on partial data is still reported as crossed. Where the merchant has given the day the business started trading, the period before it counts as covered with no sales.",
     "Japan's base period is the fiscal year two years earlier; a trailing-12-month fetch never contains it, so that row reports 'insufficient_data' until a wider window is fetched.",
     "Thresholds are tested in the jurisdiction's own currency, which is how each threshold is written. The USD figure is shown for comparison only and is never used in a threshold test.",
     "Where the jurisdiction's currency is not one you bill in, the local-currency figure is a conversion of your own charges, not an amount you ever invoiced. The currencies you actually charged in are listed per jurisdiction.",
     "Revenue converted with bundled FX rates (see fx_as_of) — a single spot rate, indicative, not accounting-grade; daily-rate effects are not modelled.",
     "A 'no_tax_regime' row is a jurisdiction that levies no tax of this kind at all (Oregon, Hong Kong) — it was assessed, and no revenue level creates an obligation there.",
     "Where a jurisdiction has no threshold at all, any sale into it is flagged on the first sale; the specific rules (B2C vs B2B, establishment) need human review.",
+    "Every threshold here is the rule for NON-established (cross-border) sellers. Sales in the merchant's own country of establishment are out of scope: that row is never scored, its revenue is reported separately, and it is never part of the at-risk total. Domestic obligations are the merchant's own and are not assessed.",
+    "A jurisdiction whose threshold rule has not passed review is never scored, in either direction. It reports 'insufficient_data' with the unverified points listed, however much revenue it carries.",
     "EU row is scheme-aware: Union OSS (EUR 10,000, cross-border only, domestic excluded) for EU-established merchants; non-Union OSS (no threshold) otherwise. Domestic VAT obligations are never assessed here.",
     "'Registered' means a matching ACTIVE Stripe Tax registration: OSS-type for the EU row, exact state for US rows, exact country otherwise. Registrations managed outside Stripe Tax are not visible to this analysis.",
     "When registrations could not be read at all, every market is shown as unregistered. That is an absence of evidence, not evidence of absence.",

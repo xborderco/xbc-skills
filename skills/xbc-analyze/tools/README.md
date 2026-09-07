@@ -21,7 +21,11 @@ Stripe updates. The run prints two lists you must not skip:
   Those rows cannot be scored; compute reports them as `insufficient_data`
   rather than undercounting revenue into a false "clear".
 - **NEEDS REVIEW** — rows the parser refused to trust. It gives up rather than
-  guessing, so this list is the point of the tool, not a nuisance.
+  guessing, so this list is the point of the tool, not a nuisance. Compute never
+  scores a `needs_review` row in either direction: it reports `insufficient_data`
+  with the `review_reasons` attached, however much revenue it carries. A page
+  with no threshold field at all is also marked `unscorable`, so an unread
+  threshold can never score as first-sale liability.
 
 ### Source note
 

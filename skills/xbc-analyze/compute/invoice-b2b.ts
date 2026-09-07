@@ -56,7 +56,11 @@ const rawCustomers = readRaw<{
   customers: CustomerRecord[];
 }>("customers.json");
 const taxIdsAvailable = rawCustomers.tax_ids_expanded !== false;
-const { charges } = readRaw<{ charges: ChargeRecord[] }>("charges.json");
+const rawCharges = readRaw<{
+  invoice_link_available?: boolean;
+  charges: ChargeRecord[];
+}>("charges.json");
+const charges = rawCharges.charges;
 const fx = readAsset<FxRates>("fx-rates.json");
 
 const round = (n: number) => Math.round(n * 100) / 100;
@@ -143,7 +147,9 @@ for (const ch of charges) {
     invoiceBackedCount += 1;
   }
 }
-const invoiceLinkAvailable = invoiceBackedCount > 0 || paid.length === 0;
+const invoiceLinkAvailable =
+  rawCharges.invoice_link_available ??
+  (invoiceBackedCount > 0 || paid.length === 0);
 
 const warnings: string[] = [];
 if (keyMode === "test") {

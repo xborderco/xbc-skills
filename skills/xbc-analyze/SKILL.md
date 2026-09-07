@@ -1,18 +1,22 @@
 ---
 name: xbc-analyze
 description: "Analyse a merchant's Stripe data read-only — from a read-only API key or a Dashboard CSV export — and produce a report they keep: revenue by country, registration thresholds needing attention, what their invoices show about business customers and tax numbers, and what integrating XBorderCo would involve. Use when a merchant wants to understand their cross-border tax exposure from their own Stripe data."
-compatibility: Node.js >= 18 and npm. Two data paths — a read-only restricted Stripe key the user creates (never a secret key), reaching api.stripe.com only; or a Stripe Dashboard CSV export, which needs no key and no network at all.
+compatibility: Node.js >= 18 and npm. Two data paths — a read-only restricted Stripe key the user creates (never a secret key), reaching api.stripe.com only; or a Stripe Dashboard CSV export, which needs no key and never connects to Stripe.
 ---
 
 # xbc-analyze — merchant tax analysis from your own Stripe data
 
 Everything runs locally. Data stays in `xbc-analysis/` inside this skill's
-directory; the report is a markdown file the user keeps. Nothing is sent to XBC or
-anywhere else. Read `SECURITY.md` for the verifiable claims.
+directory; the report is a markdown file the user keeps. Nothing is sent to XBC.
+Two things do leave the machine, and neither is this skill's doing: `npx tsx`
+may download tsx from the npm registry the first time it runs, and whatever you
+read from the output goes wherever this chat goes. Say so if asked; never say
+"nothing leaves your machine". Read `SECURITY.md` for the verifiable claims.
 
 There are two ways in: a read-only Stripe key, or a CSV export from the Stripe
-Dashboard. The CSV path needs no key, no install and no network. It also cannot
-carry everything — Step 3 states the trade honestly and lets the user choose.
+Dashboard. The CSV path needs no key, no `npm install`, and never connects to
+Stripe. It also cannot carry everything — Step 3 states the trade honestly and
+lets the user choose.
 
 **SKILL_DIR** below means the directory containing this file. Run every command
 from SKILL_DIR.
@@ -112,7 +116,10 @@ to do that first?"* If yes, read every file and report honestly in four parts:
 
 - **External connections** — every URL/host/API it touches and any outbound data
   transmission. (Expected: one host, `api.stripe.com`, via the official SDK; the
-  compute scripts make no network calls at all.)
+  compute scripts make no network calls at all. Two connections are NOT this
+  skill's code and must still be named: `npx` fetching tsx from the npm registry
+  if it is not installed, and this chat itself — anything you read from the
+  output goes to your model provider like every other message.)
 - **Data handling** — what it collects, where that data goes (local only vs sent
   anywhere), whether anything is uploaded or shared.
 - **Tool usage** — every command/tool it runs, flagging any that could send data
@@ -129,7 +136,7 @@ Say this much, and no more. Six lines. They can ask for detail.
 
 > This reads your Stripe data and writes you one report.
 >
-> - It is read-only. Nothing is sent to XBorderCo. Everything runs on your machine.
+> - It is read-only. Nothing is sent to XBorderCo. The analysis runs on your machine; what I read from it goes wherever this chat goes.
 > - You choose how to give me the data: a read-only key, or a CSV export.
 > - The whole thing takes about five minutes.
 > - The report is not tax advice. XBorderCo built this.
@@ -160,11 +167,18 @@ sessions in the window). In that case ask once, late, at the fit step:
 Never assume the supported case. An undetected, unasked integration is reported
 as unconfirmed.
 
+**The question is optional, and it never blocks the report.** Ask it once. If
+the user does not know, or does not answer, the fit verdict is "Unconfirmed" and
+every other section is delivered in full. Charges without an invoice id are a
+reason to ask, not a finding: one-off Checkout and Payment Link sales carry no
+invoice either, and both are supported. Never tell a user their setup is
+PaymentIntents, or unsupported, on the strength of missing invoice links.
+
 ## Step 3 — Connect your data
 
 **Offer both paths. Ask once.**
 
-> Two ways to give me your numbers. Both stay on this machine.
+> Two ways to give me your numbers. Neither sends anything to XBorderCo.
 >
 > **A — Read-only API key.** You make a read-only Stripe key. Takes about a
 > minute. This gives the full report.
@@ -254,6 +268,11 @@ not from a date stamp afterwards.
 >
 > I can read further back instead. How long have you been selling?
 
+If the business started trading inside the last 12 months, pass
+`--from=<first trading day>` to every fetch. The analysis then knows the months
+before it held no sales, and measures every threshold over a complete history
+instead of reporting "not enough data" for a business that is simply new.
+
 If they choose a longer window, warn them first: a high-volume account means
 thousands of paged API calls and several minutes, and charges before 2019 carry
 sparser country data, so more of them will not resolve to a country. Then pass
@@ -280,7 +299,9 @@ one line when it is done. Do not relay eight counts.
 
 ## Step 3B — CSV export
 
-No Stripe key. No `npm install`. Nothing connects to Stripe on this path.
+No Stripe key. No `npm install`. Nothing connects to Stripe on this path. (`npx
+tsx` will download tsx from the npm registry the first time, if it is not already
+installed — that is npm, not this skill.)
 
 Give the user exactly this:
 
@@ -306,17 +327,36 @@ month" cannot test them, and nearly every market comes back as "not enough data"
 Twelve months is the working minimum. Under 60 days the importer says the export
 is too short.
 
-Then run the importer yourself. Ask them for their country of establishment
-first — a CSV does not carry it, and the EU test needs it to exclude domestic
-sales:
+Then run the importer yourself. Ask two questions first, together, because a
+CSV carries neither answer:
+
+> Two things the export cannot tell me.
+>
+> 1. Which country is your business established in?
+> 2. Does this export cover every payment since you started trading? If so, on
+>    what date did you start?
+
+The first sets `--home`. Every threshold in this analysis is the rule for
+sellers who are NOT established in that country, so their own country is
+excluded from it. Without it, their domestic sales are scored against a rule
+that does not apply to them.
+
+The second sets `--trading-since`. The analysis otherwise measures data coverage
+from the earliest payment in the file, so a business that started trading last
+month looks like a one-month export of an older business, and every annual
+threshold comes back "not enough data". With the start date, the months before
+it count as covered. Pass it ONLY when the export is their complete history from
+that date; for an older business with a partial export, leave it out.
 
 ```
-npx tsx src/import-csv.ts --file="/path/to/unified_payments.csv" --home=IE
+npx tsx src/import-csv.ts --file="/path/to/unified_payments.csv" --home=IE --trading-since=2026-08-25
 ```
 
 **GATE:** `status: ok`. Relay the charge count and the window in one line. The
 output also lists `sections_unavailable_on_this_path` — say those once, plainly,
-and do not repeat them at every later step.
+and do not repeat them at every later step. If it warns that the export has no
+"Invoice ID" column, the integration type will be unconfirmed; say so once and
+carry on — it does not block the report.
 
 The importer writes the same `xbc-analysis/raw/` files the API path writes, so
 Step 4 onward is identical. Three computes will report `unavailable` or
@@ -354,20 +394,29 @@ Anything else non-zero is a failure — relay it and stop.
 
 ## Step 5 — Fit assessment
 
-Work out the verdict from two inputs. Keep the working to yourself.
+Work out the verdict from three inputs. Keep the working to yourself.
 
 - **Obligations** — from `computed/threshold-exposure.json`: how many
   jurisdictions are crossed or registration-likely, how many approaching, and how
-  many report `insufficient_data`.
+  many report `insufficient_data`. Rows with status `domestic_out_of_scope` are
+  the merchant's own country and never count.
 - **Provider support** — from `computed/stripe-setup.json`
   `detected_integration.patterns`, mapped against
   `assets/supported-providers.json` and its `fit_guidance`. Read the warnings
   first. If `patterns` is empty or `detectable` is false, ask the Step 2 question
-  now — this is the one place it is worth the user's time.
+  now — this is the one place it is worth the user's time. If they cannot
+  answer, the verdict is Unconfirmed; do not hold the report for it.
+- **Market coverage** — from `computed/market-coverage.json`. "Strong fit" is a
+  claim that XBC can take on the markets that need attention, so it needs
+  evidence of coverage: the file must have `status: ok`, and every jurisdiction
+  in `actionable_unregistered` must be `covered_today`. When the file is
+  `blocked`, or any of those markets is roadmap, not planned or not listed,
+  "Strong fit" is not available. Use "Coverage unconfirmed" instead. Tax
+  exposure and payment integration alone never make a strong fit.
 
-Pick the **verbatim fit phrasing** from `assets/cta-copy.md` (Strong / Not yet
-supported / Roadmap / Unconfirmed / Not yet) and fill its brackets. The verdict
-goes in the **report**, not in chat.
+Pick the **verbatim fit phrasing** from `assets/cta-copy.md` (Strong / Coverage
+unconfirmed / Not yet supported / Roadmap / Unconfirmed / Not yet) and fill its
+brackets. The verdict goes in the **report**, not in chat.
 
 In chat, say two lines and move on:
 
@@ -396,7 +445,7 @@ The closing message has these parts, in this order, and nothing else:
    `computed/stripe-setup.json`. Call ARR an estimate. Omit this line if
    `recurring_revenue` is null or MRR is zero.
 3. **The exposure.** How many jurisdictions need attention, and which ones. One
-   line. "Needs attention" is Stripe Tax's own term for a location where sales
+   line. Never count the merchant's own country: that row is out of scope. "Needs attention" is Stripe Tax's own term for a location where sales
    have passed the registration threshold. Use it: it states the finding without
    assuming the merchant is the one who registers. If they use XBorderCo, they
    never register — XBorderCo holds the registrations.

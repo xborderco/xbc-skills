@@ -295,6 +295,7 @@
       "currency": "USD",
       "amount": 0,
       "lookback": "rolling_12m",
+      "unscorable": true,
       "tax_type": "VAT",
       "needs_review": true,
       "review_reasons": [
@@ -312,6 +313,7 @@
       "currency": "USD",
       "amount": 0,
       "lookback": "rolling_12m",
+      "unscorable": true,
       "tax_type": "VAT",
       "needs_review": true,
       "review_reasons": [
@@ -329,6 +331,7 @@
       "currency": "USD",
       "amount": 0,
       "lookback": "rolling_12m",
+      "unscorable": true,
       "tax_type": "VAT",
       "needs_review": true,
       "review_reasons": [

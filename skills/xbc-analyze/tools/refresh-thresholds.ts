@@ -203,7 +203,12 @@ function buildRow(t: Target, body: string, asOf: string): ThresholdRow | null {
     ...(merged.tx_threshold_exclusive && { tx_threshold_exclusive: true }),
     ...(merged.amount_exclusive && { amount_exclusive: true }),
     lookback: merged.lookback ?? "rolling_12m",
-    ...(raw && !/^1 transaction\b/i.test(raw) && !/^n\/a\b/i.test(raw) && merged.amount === 0 && { unscorable: true }),
+    // amount 0 means "liable from the first sale" ONLY when Stripe says so
+    // ("1 transaction"). A page with no threshold field at all, or one whose
+    // value did not parse, is unscorable: without this, an unread threshold
+    // scored as first-sale liability and one sale flagged the market.
+    ...((!raw || (!/^1 transaction\b/i.test(raw) && !/^n\/a\b/i.test(raw))) &&
+      merged.amount === 0 && { unscorable: true }),
     ...(included && { included_transactions: included.replace(/\[([^\]]+)\]\([^)]*\)/g, "$1") }),
     ...(field(body, "Tax type") && { tax_type: field(body, "Tax type") as string }),
     ...(reasons.length > 0 && { needs_review: true, review_reasons: reasons }),
