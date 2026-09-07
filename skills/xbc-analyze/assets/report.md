@@ -85,6 +85,16 @@ A jurisdiction with no revenue carries no information. Leave it out.
 Then, in one line under the table, account for what you left out: "N other
 jurisdictions had no revenue in the window and are not listed."
 
+DOMESTIC. The merchant's own country (status domestic_out_of_scope) appears in
+the table when it has revenue, labelled "Out of scope — your own country", and
+its threshold cell says "n/a (non-established rule)". It is NEVER counted as
+needing attention, never in the bottom line, never in at-risk revenue. Every
+threshold in this report is the rule for sellers NOT established in that
+country. One line under the table, from summary.domestic_revenue_usd: "Sales in
+[home country], your country of establishment, are your own domestic obligation
+and are not assessed here." If merchant_home_country is null, render the
+warning that says so instead — do not guess their country.
+
 CURRENCY. Three currencies are in play and showing only one made an earlier
 report unreadable: a reader saw "₩263,047.50" for a merchant who has never billed
 in won, and assumed the analysis was broken.
@@ -120,7 +130,12 @@ Tax's own Dashboard vocabulary, so a merchant who checks both sees one language:
   crossed                      → "Needs attention — N% of threshold"
   approaching                  → "Approaching — N%"
   insufficient_data            → "Not enough data"
+  insufficient_data + needs_review → "Not assessed — rule unverified"
   clear                        → "Below threshold"
+  domestic_out_of_scope        → "Out of scope — your own country"
+A needs_review row is a jurisdiction whose published rule this dataset could not
+confirm. It is not "not enough data" about the merchant; it is an unverified
+rule. Say which, and give the row's review_reasons in one short clause.
 A row whose status is crossed or likely BUT which has an active Stripe Tax
 registration does NOT need attention — label it "Registered". Stripe treats an
 active registration as "Collecting tax", not as an open item, and saying a
@@ -146,7 +161,17 @@ professional. Do not sequence their decisions, and do not say they must register
 but keep it to THREE SENTENCES. Group the jurisdictions by cause; do not list ten
 US states one by one when one cause covers them all. Say what would answer them.
 Silence here reads as an all-clear that was never computed — but a paragraph this
-long buries the finding above it.}}
+long buries the finding above it.
+
+Two causes need their own wording:
+  - Short coverage. If analysis_window has no trading_since and the window is
+    under a year, say that a longer export would answer it — OR, if the business
+    is younger than the window, that re-running with the trading start date
+    would. If analysis_window HAS trading_since, there is no coverage gap to
+    report: the data is complete, and any "below threshold" is "so far".
+  - Unverified rules (needs_review rows with revenue). These were not assessed
+    because the published rule has not passed review. Name them and say why in a
+    clause each. Do not fold them into "not enough data".}}
 
 {{WARNINGS — deduplicated, per the note at the top of this file. One bullet per
 distinct warning. Drop every test-mode warning when the TEST MODE banner is
@@ -192,9 +217,14 @@ and MRR is above zero: the MRR and the ARR estimate, with the `basis` line so th
 reader can see what the figures do and do not include. This is the same number the
 closing chat message quotes — it has to be checkable here.}}
 
-{{SUPPORT_VERDICT — map the integration type against assets/supported-providers.json
-and follow its fit_guidance. Never default to supported. If stripe-setup.json warns
-about charges without invoices, say so here.}}
+{{SUPPORT_VERDICT — the Step 5 verdict, verbatim from assets/cta-copy.md. Map the
+integration type against assets/supported-providers.json and follow its
+fit_guidance. Never default to supported. "Strong fit" needs market-coverage.json
+at status ok AND every market needing attention in covered_today; otherwise use
+"Coverage unconfirmed". If stripe-setup.json warns about charges without invoices,
+say so here as what it is: a reason to confirm the integration type, not a finding
+that the setup is unsupported. If the invoice link was unavailable in the data,
+say the integration is unconfirmed for that reason and stop there.}}
 
 What integrating would involve:
 

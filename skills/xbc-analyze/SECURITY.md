@@ -18,19 +18,29 @@ every file. Each claim below states how to verify it yourself.
    gitignored. Verify: read `src/run.ts` (~100 lines); `grep -rn "STRIPE_API_KEY" .`
 4. **Secret keys are refused.** The runner exits if the key doesn't start with
    `rk_` — it will not run with your `sk_` secret key at all.
-5. **The CSV path touches no network at all.** If you import a Stripe Dashboard
+5. **The CSV path never connects to Stripe.** If you import a Stripe Dashboard
    export instead of connecting a key (`src/import-csv.ts`), nothing in this
    skill opens a connection: the importer reads your file, writes JSON into
    `xbc-analysis/raw/`, and exits. It never loads the Stripe SDK. Verify: read
-   `src/import-csv.ts` (~250 lines) — its only imports are `node:fs`,
-   `node:path` and `node:url`.
-6. **Your data stays local.** Fetched data goes to `xbc-analysis/` (gitignored)
-   inside this directory; reports are local markdown. Nothing is uploaded,
-   nothing phones home, there is no telemetry of any kind. This includes the
-   question list: if the skill can't answer something and records it in
-   `xbc-analysis/questions.md`, that file stays on your machine. The skill can
-   DRAFT an email to XBorderCo containing those questions, but you send it — it
-   has no ability to send mail itself. Verify: `grep -rn "smtp\|sendmail\|mailto\|nodemailer" .`
+   `src/import-csv.ts` (~300 lines) — its only imports are `node:fs`,
+   `node:path` and `node:url`. One caveat that is npm's, not ours: `npx tsx`
+   downloads tsx from the npm registry the first time it runs if it is not
+   already installed. Run `npm install` once beforehand if you want to be sure
+   nothing is fetched during the analysis.
+6. **This skill sends your data nowhere.** Fetched data goes to `xbc-analysis/`
+   (gitignored) inside this directory; reports are local markdown. Nothing is
+   uploaded to XBorderCo, nothing phones home, there is no telemetry of any kind.
+   This includes the question list: if the skill can't answer something and
+   records it in `xbc-analysis/questions.md`, that file stays on your machine.
+   The skill can DRAFT an email to XBorderCo containing those questions, but you
+   send it — it has no ability to send mail itself. Verify:
+   `grep -rn "smtp\|sendmail\|mailto\|nodemailer" .`
+   **What this claim does not cover:** the AI agent running the skill. Whatever
+   the agent reads — script output, computed JSON, the report — goes to that
+   agent's model provider like any other message in your conversation, under
+   that provider's terms. That is true of every tool an agent runs and is
+   outside this skill's control. If that matters to you, run the scripts
+   yourself from a terminal and read the report without the agent.
 7. **No install-time code execution from us.** This package has no postinstall
    scripts. Verify: `grep -n "postinstall\|preinstall" package.json`. (For full
    honesty: `npm install` does run the standard native build scripts of the dev

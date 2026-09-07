@@ -9,8 +9,12 @@ export const SKILL_ROOT = resolve(
   dirname(fileURLToPath(import.meta.url)),
   ".."
 );
-export const RAW_DIR = join(SKILL_ROOT, "xbc-analysis", "raw");
-export const COMPUTED_DIR = join(SKILL_ROOT, "xbc-analysis", "computed");
+// XBC_ANALYSIS_DIR lets the regression tests point a compute script at a
+// fixture directory. It is never set on a merchant's run.
+const ANALYSIS_DIR =
+  process.env.XBC_ANALYSIS_DIR ?? join(SKILL_ROOT, "xbc-analysis");
+export const RAW_DIR = join(ANALYSIS_DIR, "raw");
+export const COMPUTED_DIR = join(ANALYSIS_DIR, "computed");
 
 export function readRaw<T>(name: string): T {
   const path = join(RAW_DIR, name);

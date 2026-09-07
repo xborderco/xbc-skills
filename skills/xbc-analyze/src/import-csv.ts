@@ -6,10 +6,18 @@ import { fileURLToPath } from "node:url";
 // Writes the same xbc-analysis/raw/ files the fetch actions write, so every
 // compute script downstream runs unchanged.
 //
-//   npx tsx src/import-csv.ts --file="/path/to/unified_payments.csv" [--home=IE]
+//   npx tsx src/import-csv.ts --file="/path/to/unified_payments.csv" [--home=IE] [--trading-since=YYYY-MM-DD]
 //
-// No Stripe key, no network, no npm dependency beyond tsx. The CSV never leaves
-// this machine. A CSV cannot carry customer tax IDs, tax registrations,
+// No Stripe key, no Stripe SDK, no dependency beyond tsx. Nothing in this file
+// opens a network connection; the CSV is read and JSON is written locally.
+// (`npx tsx` itself may download tsx from the npm registry the first time it
+// runs — that is npm, not this importer.)
+//
+// --trading-since: the day the business started trading. The analysis window
+// otherwise starts at the earliest payment in the export, so a new business's
+// COMPLETE history looks like a partial export and every annual threshold
+// reports "not enough data". With the start date known, the months before it
+// are known-empty and count as covered. A CSV cannot carry customer tax IDs, tax registrations,
 // subscriptions or the product catalogue, so several report sections are
 // unavailable on this path — that is recorded in the output, not hidden.
 
@@ -35,6 +43,13 @@ const csvPath = resolve(file.replace(/^~(?=\/)/, process.env.HOME ?? "~"));
 if (!existsSync(csvPath)) fail(`file not found: ${csvPath}`);
 
 const home = params.home ? params.home.toUpperCase() : null;
+
+const tradingSince = params["trading-since"]
+  ? new Date(`${params["trading-since"]}T00:00:00Z`)
+  : null;
+if (tradingSince !== null && Number.isNaN(tradingSince.getTime())) {
+  fail("invalid --trading-since date (use YYYY-MM-DD)");
+}
 
 // --- CSV parsing (RFC 4180: quoted fields may contain commas and newlines) ---
 
@@ -106,6 +121,12 @@ if (missing.length > 0) {
 
 const get = (row: string[], col: string): string =>
   (index.has(col) ? row[index.get(col) as number] ?? "" : "").trim();
+
+// The invoice link is optional for the threshold analysis but decides what the
+// integration signal can say. When the column is absent, every charge would
+// read as "no invoice" — which downstream must treat as UNKNOWN, not as
+// evidence of a PaymentIntents setup.
+const invoiceColumnPresent = index.has("Invoice ID");
 
 // --- rows -> ChargeRecord ------------------------------------------------
 
@@ -180,11 +201,27 @@ if (charges.length === 0) {
   );
 }
 
+if (tradingSince !== null && tradingSince.getTime() > (earliest as number)) {
+  fail(
+    `--trading-since (${params["trading-since"]}) is after the earliest payment in the export (${new Date(earliest as number).toISOString().slice(0, 10)}). Give the day the business actually started trading.`
+  );
+}
+// The analysis window starts at the trading start when known. Every threshold
+// window is measured against this, so a new business's full history covers it.
+const windowFrom =
+  tradingSince !== null ? tradingSince.getTime() : (earliest as number);
 const window = {
-  from: new Date(earliest as number).toISOString(),
+  from: new Date(windowFrom).toISOString(),
   to: new Date(latest as number).toISOString(),
+  ...(tradingSince !== null && {
+    trading_since: tradingSince.toISOString(),
+    note: "The window starts at the day the business began trading, as given by the merchant. The months before it are known to hold no sales and count as covered.",
+  }),
 };
 const spanDays = Math.round(
+  ((latest as number) - windowFrom) / (24 * 60 * 60 * 1000)
+);
+const exportDays = Math.round(
   ((latest as number) - (earliest as number)) / (24 * 60 * 60 * 1000)
 );
 
@@ -196,7 +233,13 @@ const write = (name: string, data: object) => {
   );
 };
 
-write("charges.json", { window, charges });
+write("charges.json", {
+  window,
+  // false when the export has no "Invoice ID" column at all. Downstream reads
+  // this as "link unknown", never as "no invoices".
+  invoice_link_available: invoiceColumnPresent,
+  charges,
+});
 // A CSV carries no customer records. Country resolution falls back to the
 // billing and card-issuer columns, which the export does carry.
 write("customers.json", { tax_ids_expanded: false, customers: [] });
@@ -233,13 +276,24 @@ if (!home) {
     "No --home country given. The EU test needs the country your business is established in, and without it domestic sales cannot be excluded. Re-run with --home=XX."
   );
 }
-if (spanDays < 60) {
+if (!invoiceColumnPresent) {
   warnings.push(
-    `The export covers ${spanDays} days. Registration thresholds are annual, so a window this short cannot test them — most jurisdictions will report "not enough data". Export at least 12 months.`
+    'The export has no "Invoice ID" column, so whether each payment came from an invoice is unknown. The integration type will be reported as unconfirmed, not as unsupported. Re-export with Columns set to "All columns" to include it.'
+  );
+}
+if (tradingSince !== null) {
+  if (spanDays < 330) {
+    warnings.push(
+      `The business has traded for ${spanDays} days, so every annual threshold is measured over a complete but short history. A market reported "below threshold" is below it so far; a full year of trading has not yet happened.`
+    );
+  }
+} else if (spanDays < 60) {
+  warnings.push(
+    `The export covers ${exportDays} days. Registration thresholds are annual, so a window this short cannot test them — most jurisdictions will report "not enough data". Export at least 12 months. If the business only started trading inside this window, the export is complete, not short: re-run with --trading-since=YYYY-MM-DD and the earlier months count as covered.`
   );
 } else if (spanDays < 330) {
   warnings.push(
-    `The export covers ${spanDays} days, less than a full year. Jurisdictions measuring over a longer window will report "not enough data" rather than a result.`
+    `The export covers ${exportDays} days, less than a full year. Jurisdictions measuring over a longer window will report "not enough data" rather than a result. If the business started trading inside this window, re-run with --trading-since=YYYY-MM-DD.`
   );
 }
 
@@ -254,6 +308,9 @@ console.log(
       rows_skipped_not_paid: skipped,
       window,
       window_days: spanDays,
+      export_days: exportDays,
+      trading_since: tradingSince?.toISOString().slice(0, 10) ?? null,
+      invoice_link_available: invoiceColumnPresent,
       head_office_country: home,
       sections_unavailable_on_this_path: unavailable,
       ...(warnings.length > 0 && { warnings }),

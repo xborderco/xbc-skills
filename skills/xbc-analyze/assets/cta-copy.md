@@ -17,8 +17,7 @@ sentence has to be true, and it is the first thing a sceptical reader checks.
 > structure, your exemptions, or any registrations you already hold. Before you
 > act on anything here, take advice from a qualified professional. Generated
 > locally from your own Stripe account with a read-only key — nothing was sent
-> to XBorderCo or anywhere else, and this report is yours to keep, share, or
-> delete.
+> to XBorderCo, and this report is yours to keep, share, or delete.
 
 **B — when a Stripe Dashboard CSV export was used** (`_meta.source` is
 `csv_import` in the computed files):
@@ -29,7 +28,13 @@ sentence has to be true, and it is the first thing a sceptical reader checks.
 > export it cannot see them at all. Before you act on anything here, take advice
 > from a qualified professional. Generated on your own machine from a CSV you
 > exported yourself; nothing connected to Stripe and nothing was sent to
-> XBorderCo or anywhere else. This report is yours to keep, share, or delete.
+> XBorderCo. This report is yours to keep, share, or delete.
+
+<!-- NEEDS SIGN-OFF (John): 7 Sep 2026, "or anywhere else" removed from both
+     versions. It was not true as written — the agent running the skill sends
+     what it reads to its model provider, and npx may fetch tooling. A merchant's
+     agent caught it. "Nothing was sent to XBorderCo" is the claim we can stand
+     behind. -->
 
 ## CTA footer — bottom of the report, exactly this text
 
@@ -44,6 +49,20 @@ nothing is sent automatically.
 
 **Strong fit** — "[N] of your markets need attention, and your Stripe setup
 ([integration type]) is one XBC supports today."
+
+<!-- "Strong fit" is only available when assets/coverage.json is signed and every
+     market that needs attention is in covered_today. Exposure plus a supported
+     integration is not, on its own, a strong fit — XBC also has to cover the
+     markets. See SKILL.md Step 5. -->
+
+**Coverage unconfirmed** — "[N] of your markets need attention, and your Stripe
+setup ([integration type]) is one XBC supports today. Whether XBC covers
+[markets] is not confirmed in this report — that's the first thing to settle on
+a call."
+
+<!-- NEEDS SIGN-OFF (John): added 7 Sep 2026 so the fit step has honest wording
+     for the common case where coverage.json is unsigned. Replaces "Strong fit"
+     in that case; never used alongside it. -->
 
 **Not yet supported** — "[N] of your markets need attention. The setup you're on
 ([integration type]) isn't one XBC can process: [reason from

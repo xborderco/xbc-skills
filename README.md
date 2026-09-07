@@ -65,9 +65,13 @@ npx skills remove xbc-analyze
 
 Once installed, your agent discovers each skill from its description — just
 describe the task ("analyse my Stripe account for cross-border tax exposure")
-and it runs the right one. `xbc-analyze` needs **Node.js 18+** and a
-**read-only restricted** Stripe key you create; it never touches a secret key
-and nothing leaves your machine. Read the skill's `SKILL.md` first.
+and it runs the right one. `xbc-analyze` needs **Node.js 18+** and either a
+**read-only restricted** Stripe key you create or a Stripe Dashboard CSV export;
+it never touches a secret key and sends nothing to XBorderCo. Two things do leave
+your machine, and neither is the skill's code: `npx` may fetch tooling from the
+npm registry, and what your agent reads from the report goes to its model
+provider like the rest of your chat. Read the skill's `SKILL.md` and
+`SECURITY.md` first.
 
 > **Note on `xbc-analyze`'s local files.** It runs real code that writes a
 > `.env` (your Stripe key), installs `node_modules/`, and saves fetched data and

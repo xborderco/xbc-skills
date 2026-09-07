@@ -44,9 +44,12 @@ interface Subscription {
 }
 
 const rawCharges = readRaw<{
-  _meta?: { key_mode?: string };
+  _meta?: { key_mode?: string; source?: string };
+  // Set by the CSV importer: false when the export had no "Invoice ID" column.
+  invoice_link_available?: boolean;
   charges: ChargeRecord[];
 }>("charges.json");
+const fromCsv = rawCharges._meta?.source === "csv_import";
 const charges = rawCharges.charges;
 const keyMode = rawCharges._meta?.key_mode ?? "unknown";
 // Absent on the CSV path — a payments export has no product catalogue. Report
@@ -142,7 +145,10 @@ const chargesWithInvoice = charges.filter((ch) => ch.invoice !== null).length;
 const paidInvoices = invoices?.filter((i) => i.status === "paid").length ?? 0;
 // If not one charge carries an invoice link but paid invoices exist, the API
 // version simply isn't returning the link — that is not evidence of anything.
-const invoiceLinkAvailable = chargesWithInvoice > 0 || paidInvoices === 0;
+// On the CSV path the importer says outright whether the column was there.
+const invoiceLinkAvailable =
+  rawCharges.invoice_link_available ??
+  (chargesWithInvoice > 0 || paidInvoices === 0);
 
 // Integration patterns detected from the account. Reported as observations, never
 // as a single verdict: an account can legitimately run more than one.
@@ -167,6 +173,12 @@ if ((invoices?.length ?? 0) > 0) {
     (i) => i.billing_reason === "manual" || i.billing_reason === "subscription_create"
   ).length;
   if ((apiCreated ?? 0) > 0) detected.push("Invoice or Subscription API");
+} else if (fromCsv && invoiceLinkAvailable && chargesWithInvoice > 0) {
+  // A payments export carries the invoice id but not why the invoice exists,
+  // so the API cannot be named. Say what the data shows and no more.
+  detected.push(
+    "Invoiced payments (Invoice or Subscription API — a CSV export cannot tell which)"
+  );
 }
 
 const warnings: string[] = [];
@@ -202,7 +214,9 @@ if (!catalogueAvailable) {
 }
 if (!invoiceLinkAvailable) {
   warnings.push(
-    "This Stripe API version does not return the invoice link on charges, so invoice coverage cannot be measured. It is NOT safe to read this as 'no invoices'."
+    fromCsv
+      ? 'The export has no "Invoice ID" column, so whether each payment came from an invoice is unknown. The integration type is unconfirmed — this is a gap in the export, not evidence of an unsupported setup.'
+      : "This Stripe API version does not return the invoice link on charges, so invoice coverage cannot be measured. It is NOT safe to read this as 'no invoices'."
   );
 }
 if (
@@ -213,8 +227,11 @@ if (
   const pct =
     Math.round(((charges.length - chargesWithInvoice) / charges.length) * 1000) /
     10;
+  // A missing invoice link is a SIGNAL, not a verdict. One-off Checkout and
+  // Payment Link sales also produce no Stripe invoice and are supported, so
+  // this figure alone never means "unsupported". It means: confirm.
   warnings.push(
-    `${pct}% of charges in the window have no invoice attached. XBorderCo applies tax when an invoice is created, so transactions created directly through the PaymentIntents or legacy Charges API are outside what it can process. Confirm the integration type before treating this account as supported.`
+    `${pct}% of charges in the window carry no invoice id. This is a signal to confirm the integration type, not evidence of an unsupported setup: one-off Checkout and Payment Link sales also carry no invoice and are supported, while payments created directly through the PaymentIntents or legacy Charges API are not. Until the merchant confirms, the integration is unconfirmed.`
   );
 }
 
@@ -282,7 +299,7 @@ const path = writeComputed("stripe-setup.json", {
     "Catalogue figures cover ACTIVE products and prices only; archived ones are not fetched.",
     "Digital tax codes are Stripe codes beginning txcd_10. A product with a different code is reported under its own code, not judged.",
     "Stripe Tax status comes from the account's tax settings; 'null' means the settings were unreadable or Stripe Tax was never configured.",
-    "Invoice coverage counts charges carrying an invoice id. It is a signal about integration shape, not a verdict — the integration type still has to be confirmed with the merchant.",
+    "Invoice coverage counts charges carrying an invoice id. It is a signal about integration shape, not a verdict — one-off Checkout and Payment Link sales carry no invoice and are supported. The integration type is confirmed by the merchant or by detected Checkout sessions and invoices, never inferred from this figure alone.",
     "MRR covers active subscriptions only and excludes one-off sales. ARR is MRR multiplied by 12 — an extrapolation of the current book, not a forecast and not a record of last year.",
   ],
 });
